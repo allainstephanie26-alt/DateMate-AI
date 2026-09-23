@@ -1,4 +1,4 @@
-name: Deploy web demo
+name: Deploy DateMate-AI web demo
 
 # Builds the Flutter web app and publishes it to GitHub Pages on every push to
 # main, so the link in your README is always your latest commit.

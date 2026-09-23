@@ -1,11 +1,11 @@
 {
-  "name": "My Final Project",
-  "short_name": "Final Project",
+  "name": "DateMate AI",
+  "short_name": "DateMate AI",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#6750A4",
-  "description": "My 6ADET final project.",
+  "background_color": "#FFF7F5",
+  "theme_color": "#65172F",
+  "description": "DateMate AI — a mobile date planning app for couples.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false
 }
