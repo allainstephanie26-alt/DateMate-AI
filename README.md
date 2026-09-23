@@ -6,14 +6,14 @@
   New here? Read START-HERE.md first. Delete this comment when you are done.
 -->
 
-# App Name
+# DateMate AI
 
-> One sentence: what this app does, and who it is for.
+> DateMate AI is a mobile-friendly date planning application that helps couples discover date ideas, manage their preferences, and save activities to a shared date bucket list.
 
-**Live demo:** https://YOURUSERNAME.github.io/YOUR-REPO/ <!-- GitHub Pages is set up already; replace if you host elsewhere -->
+**Live demo:** https://allainstephanie26-alt.github.io/DateMate-AI/ <!-- GitHub Pages is set up already; replace if you host elsewhere -->
 **Demo video:** `docs/demo.mp4` (link it here once it exists)
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
-**Author:** Your Name
+**Author:** Marimla, Allain Stephanie S.
 
 This repository lives in the author's own GitHub account and is public on
 purpose. There is no `student.json` here and there should not be one: see
@@ -27,30 +27,51 @@ personal data.
 Put two or three real screenshots at phone size in `docs/assets/`, then replace
 this paragraph with them:
 
-```markdown
-| Home | Detail | Add |
-| --- | --- | --- |
-| ![Home](docs/assets/screen-home.png) | ![Detail](docs/assets/screen-detail.png) | ![Add](docs/assets/screen-add.png) |
-```
+### Login / Sign Up
+
+![Login / Sign Up](docs/assets/login.png)
+
+### Couple Preferences
+
+![Couple Preferences](docs/assets/preferences.png)
+
+### Home Dashboard
+
+![Home Dashboard](docs/assets/home.png)
+
+### AI Date Recommendation
+
+![AI Date Recommendation](docs/assets/ai_recommendation.png)
+
+### Date Bucket List
+
+![Date Bucket List](docs/assets/bucket_list.png)
 
 A repo without screenshots reads as abandoned, whatever the code says.
 
 ## What it does
 
-Three to five bullets. What can a user actually do?
+DateMate AI provides a simple way for couples to plan and keep track of date activities.
 
-- ...
-- ...
-- ...
+- Allows users to create an account and log in to the application.
+- Lets couples enter and manage their date preferences, including moods, food, activities, and locations.
+- Provides date recommendations based on the selected preferences.
+- Allows users to save date ideas to a personal date bucket list.
+- Lets users track saved and completed date activities through the dashboard.
+- Provides a mobile-style interface that can be accessed through the web using Device Preview.
 
 ## Built with
 
-| | |
+| Technology | Purpose |
 | --- | --- |
-| Framework | Flutter (Dart) |
-| State | `setState` / provider / riverpod (say which) |
-| Storage | shared_preferences / Hive / Drift / Firebase / Supabase / other |
-| Other packages | list the ones that matter, with a word on why |
+| Framework | Flutter |
+| Programming Language | Dart |
+| State Management | `ChangeNotifier` and `setState` |
+| Local Storage | Hive |
+| Cloud Database | Firebase Cloud Firestore |
+| Authentication | Firebase Authentication |
+| Device Preview | `device_preview` |
+| Other Packages | `firebase_core`, `firebase_auth`, `cloud_firestore`, `hive_flutter`, `crypto`, `cupertino_icons` |
 
 ## Running it yourself
 
@@ -65,25 +86,28 @@ put yours here).
 
 ### Environment variables
 
-This project reads its configuration from a `.env` file that is **not** in the
-repository. Copy `.env.example`, fill in your own values, and never commit the
-result.
+This project does not use a `.env` file. Firebase is used for authentication
+and cloud synchronization through the application's Firebase configuration.
+Firebase configuration values are generated and managed through the FlutterFire
+configuration for the project.
 
 | Variable | What it is | Where to get one |
 | --- | --- | --- |
-| `EXAMPLE_API_KEY` | ... | ... |
+| `FIREBASE_API_KEY` | Identifies the Firebase project used by the application | Firebase Console → Project settings → Apps |
+| `FIREBASE_PROJECT_ID` | Identifies the Firebase project connected to DateMate AI | Firebase Console → Project settings |
+| `FIREBASE_APP_ID` | Identifies the registered Firebase application | Firebase Console → Project settings → Apps |
 
 ## Privacy and secrets
 
-Required section. Two or three honest sentences:
+DateMate AI stores account information, couple preferences, date ideas, and
+bucket-list activities. Local data is stored using Hive, while account and
+cloud-related data are handled through Firebase Authentication and Cloud
+Firestore.
 
-- What personal data this app stores, if any, and where it goes.
-- Where the secrets live (`.env` locally, repository secrets in the deploy
-  workflow) and what protects the data on the service side (Firestore rules,
-  Supabase RLS, or "nothing leaves the device").
-- Confirm that all sample data, screenshots and the video contain **no real
-  personal information**.
-
+The repository is public, so passwords, private keys, service-account files,
+and other sensitive information should not be committed. The sample data,
+screenshots, and demo video use test information and do not contain real
+personal information.
 ## Project documentation
 
 | Document | |
@@ -98,33 +122,47 @@ Required section. Two or three honest sentences:
 
 ## Status and what is next
 
-Be honest. What works, what is half done, what you would build next. An honest
-"known issues" section reads better than a claim the reader disproves in thirty
-seconds.
+### Current status
 
+The five main screens of DateMate AI are implemented: Login / Sign Up, Couple
+Preferences, Home Dashboard, AI Date Recommendation, and Date Bucket List.
+The application can be run locally and the web version is available through
+GitHub Pages. Firebase Authentication, Cloud Firestore, and Hive are also
+integrated into the project.
+
+### Known issues
+
+- Firebase authentication and cloud synchronization still need more testing
+  on the deployed web version.
+- Date recommendations can still be improved to make the results more
+  personalized.
+- Some user flows and data synchronization need additional testing on
+  different screen sizes and devices.
+- Final UI and usability testing is still needed before final submission.
+
+### Next steps
+
+- Finish testing the five main screens and their interactions.
+- Test Firebase authentication and cloud synchronization on the live version.
+- Improve the date recommendation results based on couple preferences.
+- Complete the final documentation and demo video.
+- Fix any remaining issues found during final testing.
+  
 ## Credits
 
-- Packages: see `pubspec.yaml`
-- Assets, icons, 3D models, sounds: name the author and the licence for each
-- People who helped, and how
+- Flutter and Dart — application framework and programming language
+- Firebase — authentication and cloud database services
+- Hive — local data storage
+- Device Preview — mobile-device preview during development
+- Other packages — see `pubspec.yaml` for the complete list
+- UI design, application structure, and project implementation — developed for
+  the DateMate AI project
+- AI assistance — used for development support, debugging, and code review.
 
 ## AI use
-
-If you used AI while building this, say so here. Honest disclosure is the
-standard in this course and increasingly outside it, and reporting heavy use
-accurately costs you nothing.
-
-This section is the last 10 points of the finals badge, and it wants three
-things:
-
-![Built with AI assistance](https://img.shields.io/badge/built%20with-AI%20assistance-0b5fff)
-
-- the badge above, or one you like better
-- a line naming which assistant you used and how much of the work it touched
-- a link to [AI-USAGE.md](AI-USAGE.md), where the full account lives
-
-Keep the detail in `AI-USAGE.md` rather than here. This section is the summary a
-visitor reads; that file is the record the badge is graded from.
+ChatGPT and Claude were used as assistants for troubleshooting code errors
+during the development of DateMate AI. They were mainly used to help identify
+and resolve Flutter and Dart errors encountered during development.
 
 ## Licence
 
