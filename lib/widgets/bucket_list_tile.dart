@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../theme.dart';
+import 'place_image.dart';
 
 class BucketListTile extends StatelessWidget {
   final BucketListItem item;
@@ -45,42 +46,37 @@ class BucketListTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 62,
-              width: double.infinity,
-              decoration: const BoxDecoration(gradient: AppColors.softGradient),
-              child: Row(
-                children: [
-                  const SizedBox(width: 14),
-                  Container(
-                    width: 42,
-                    height: 42,
+            Stack(
+              children: [
+                PlaceImage(
+                  placeName: item.name,
+                  source: item.imageUrl,
+                  height: 118,
+                  borderRadius: 0,
+                ),
+                Positioned(
+                  left: 12,
+                  bottom: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppColors.blush,
-                      borderRadius: BorderRadius.circular(13),
+                      color: Colors.black.withValues(alpha: .48),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
-                      Icons.favorite_border,
-                      color: AppColors.gradientEnd,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
                     child: Text(
                       item.category,
                       style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(right: 14),
-                    child: Icon(Icons.more_horiz, color: AppColors.muted),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.all(13),

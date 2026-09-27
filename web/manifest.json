@@ -1,11 +1,11 @@
 {
   "name": "DateMate AI",
-  "short_name": "DateMate AI",
+  "short_name": "DateMate",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#FFF7F5",
-  "theme_color": "#65172F",
-  "description": "DateMate AI — a mobile date planning app for couples.",
+  "background_color": "#FFF8F5",
+  "theme_color": "#64172F",
+  "description": "DateMate AI — a mobile date-planning app for couples.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false
 }

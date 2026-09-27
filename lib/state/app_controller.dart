@@ -77,7 +77,20 @@ class AppController extends ChangeNotifier {
     try {
       if (cloud.enabled) {
         final credential = await cloud.signIn(normalized, password);
-        final uid = credential.user!.uid;
+        await credential.user?.reload();
+        final signedInUser = credential.user;
+        if (signedInUser != null && !signedInUser.emailVerified) {
+          errorMessage =
+              'Please verify your email before signing in. Check your inbox for the Firebase verification link.';
+          try {
+            await signedInUser.sendEmailVerification();
+          } catch (_) {}
+          await cloud.signOut();
+          await db.delete(_sessionKey);
+          _setBusy(false);
+          return false;
+        }
+        final uid = signedInUser!.uid;
         final profile = await cloud.loadUser(uid);
         if (profile == null) {
           errorMessage =
@@ -139,6 +152,7 @@ class AppController extends ChangeNotifier {
     try {
       if (cloud.enabled) {
         final credential = await cloud.signUp(normalized, password);
+        await credential.user?.sendEmailVerification();
         final user = UserModel(
           id: credential.user!.uid,
           email: normalized,
@@ -174,7 +188,13 @@ class AppController extends ChangeNotifier {
         currentUser = user;
         await createCouple();
       }
-      await db.write(_sessionKey, currentUser!.id);
+      if (cloud.enabled) {
+        // A Firebase account must be verified before the app creates a signed-in session.
+        await cloud.signOut();
+        await db.delete(_sessionKey);
+      } else {
+        await db.write(_sessionKey, currentUser!.id);
+      }
       _setBusy(false);
       notifyListeners();
       return true;
@@ -185,43 +205,28 @@ class AppController extends ChangeNotifier {
     }
   }
 
-  Future<bool> resetPassword(String email, String newPassword) async {
+  Future<bool> resetPassword(String email) async {
     final normalized = email.trim().toLowerCase();
-    if (newPassword.length < 6) {
-      errorMessage = 'Use a password with at least 6 characters.';
+    if (!normalized.contains('@')) {
+      errorMessage = 'Enter a valid email address.';
       notifyListeners();
       return false;
     }
+
     try {
       if (cloud.enabled) {
-        // Firebase sends the secure reset email; it does not expose passwords to the app.
+        // Firebase sends the secure password-reset email.
         await cloud.resetPassword(normalized);
         errorMessage = null;
         notifyListeners();
         return true;
       }
-      final users = _users;
-      String? id;
-      UserModel? found;
-      for (final value in users.values) {
-        final user = UserModel.fromMap(Map<String, dynamic>.from(value));
-        if (user.email == normalized) {
-          id = user.id;
-          found = user;
-          break;
-        }
-      }
-      if (id == null || found == null) {
-        errorMessage = 'No local account was found for that email.';
-        notifyListeners();
-        return false;
-      }
-      users[id] = found.copyWith().toMap()
-        ..['passwordHash'] = _hash(newPassword);
-      await db.write(_usersKey, users);
-      errorMessage = null;
+
+      // Local mode cannot send a real email, so provide a clear local-mode message.
+      errorMessage =
+          'Password reset email requires Firebase authentication to be enabled.';
       notifyListeners();
-      return true;
+      return false;
     } catch (e) {
       errorMessage = _friendlyError(e);
       notifyListeners();
@@ -256,6 +261,7 @@ class AppController extends ChangeNotifier {
       activities: <String>{},
       locations: <String>{},
       budget: 0,
+      budgetCurrency: 'PHP',
       updatedAt: DateTime.now(),
     );
     couple = newCouple;
@@ -427,6 +433,7 @@ class AppController extends ChangeNotifier {
     required Set<String> activities,
     required Set<String> locations,
     required double budget,
+    required String budgetCurrency,
   }) async {
     if (couple == null) return;
     couple = couple!.copyWith(
@@ -434,6 +441,7 @@ class AppController extends ChangeNotifier {
       activities: activities,
       locations: locations,
       budget: budget,
+      budgetCurrency: budgetCurrency,
     );
     if (cloud.enabled) {
       await cloud.saveCouple(couple!);
@@ -442,7 +450,7 @@ class AppController extends ChangeNotifier {
       couples[couple!.id] = couple!.toMap();
       await db.write(_couplesKey, couples);
     }
-    _generateSuggestions();
+    await _generateSuggestions();
     notifyListeners();
   }
 
@@ -451,21 +459,35 @@ class AppController extends ChangeNotifier {
     generating = true;
     errorMessage = null;
     notifyListeners();
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    _generateSuggestions();
+    await _generateSuggestions();
+    generating = false;
+    notifyListeners();
+  }
+
+  Future<void> generateMoodIdeas(String selectedMood) async {
+    mood = selectedMood;
+    generating = true;
+    errorMessage = null;
+    notifyListeners();
+    _generationSeed++;
+    currentSuggestions = await recommendations.generateMoodAsync(
+      mood: selectedMood,
+      couple: couple,
+      seed: _generationSeed,
+    );
     generating = false;
     notifyListeners();
   }
 
   int _generationSeed = 0;
 
-  void _generateSuggestions() {
+  Future<void> _generateSuggestions() async {
     if (couple == null) {
       currentSuggestions = [];
       return;
     }
     _generationSeed++;
-    currentSuggestions = recommendations.generate(
+    currentSuggestions = await recommendations.generateAsync(
       couple: couple!,
       mood: mood,
       seed: _generationSeed,

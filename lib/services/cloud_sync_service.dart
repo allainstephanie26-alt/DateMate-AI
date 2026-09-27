@@ -3,12 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../models/app_models.dart';
 
-/// Optional cloud backend.
-///
-/// The app remains runnable with Hive when Firebase environment values are not
-/// supplied. When the values are supplied, authentication and user/couple
-/// data are stored in Firebase Authentication + Cloud Firestore and changes
-/// are synchronized through the repository methods below.
 class CloudSyncService {
   bool enabled = false;
 
@@ -34,6 +28,7 @@ class CloudSyncService {
 
   Future<void> init() async {
     if (!configured) return;
+
     try {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
@@ -47,6 +42,7 @@ class CloudSyncService {
           ),
         );
       }
+
       _auth = FirebaseAuth.instance;
       _firestore = FirebaseFirestore.instance;
       enabled = true;
@@ -57,6 +53,15 @@ class CloudSyncService {
 
   FirebaseAuth get auth => _auth!;
   FirebaseFirestore get firestore => _firestore!;
+
+  /// Firebase project ID used by the DateMate AI Cloud Function endpoint.
+  String get projectId => _projectId;
+
+  /// Returns the current Firebase ID token for authenticated backend calls.
+  Future<String?> getIdToken() async {
+    if (!enabled) return null;
+    return auth.currentUser?.getIdToken();
+  }
 
   Future<UserCredential> signUp(String email, String password) =>
       auth.createUserWithEmailAndPassword(email: email, password: password);
@@ -69,12 +74,22 @@ class CloudSyncService {
   Future<void> resetPassword(String email) =>
       auth.sendPasswordResetEmail(email: email);
 
+  Future<void> sendVerificationEmail() async {
+    await auth.currentUser?.sendEmailVerification();
+  }
+
+  Future<void> reloadCurrentUser() async {
+    await auth.currentUser?.reload();
+  }
+
   Future<Map<String, UserModel>> loadUsers(List<String> ids) async {
     final result = <String, UserModel>{};
+
     for (final id in ids) {
       final user = await loadUser(id);
       if (user != null) result[id] = user;
     }
+
     return result;
   }
 
@@ -87,7 +102,9 @@ class CloudSyncService {
 
   Future<UserModel?> loadUser(String uid) async {
     final snap = await firestore.collection('users').doc(uid).get();
+
     if (!snap.exists || snap.data() == null) return null;
+
     return UserModel.fromMap(Map<String, dynamic>.from(snap.data()!));
   }
 
@@ -122,7 +139,9 @@ class CloudSyncService {
 
   Future<CoupleModel?> loadCouple(String id) async {
     final snap = await firestore.collection('couples').doc(id).get();
+
     if (!snap.exists || snap.data() == null) return null;
+
     return CoupleModel.fromMap(Map<String, dynamic>.from(snap.data()!));
   }
 
@@ -132,7 +151,9 @@ class CloudSyncService {
         .where('code', isEqualTo: code.trim().toUpperCase())
         .limit(1)
         .get();
+
     if (snap.docs.isEmpty) return null;
+
     return CoupleModel.fromMap(
       Map<String, dynamic>.from(snap.docs.first.data()),
     );
@@ -145,6 +166,7 @@ class CloudSyncService {
         .collection('bucketItems')
         .orderBy('createdAt', descending: true)
         .get();
+
     return snap.docs
         .map((d) => BucketListItem.fromMap(Map<String, dynamic>.from(d.data())))
         .toList();
@@ -156,9 +178,11 @@ class CloudSyncService {
         .collection('couples')
         .doc(coupleId)
         .collection('bucketItems');
+
     for (final item in items) {
       batch.set(collection.doc(item.id), item.toMap());
     }
+
     await batch.commit();
   }
 
@@ -176,7 +200,9 @@ class CloudSyncService {
         .collection('meta')
         .doc('favorites')
         .get();
+
     if (!snap.exists) return {};
+
     return Set<String>.from((snap.data()?['ids'] as List?) ?? const []);
   }
 

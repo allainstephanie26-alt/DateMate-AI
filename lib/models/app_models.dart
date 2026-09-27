@@ -55,6 +55,7 @@ class CoupleModel {
   final Set<String> activities;
   final Set<String> locations;
   final double budget;
+  final String budgetCurrency;
   final DateTime updatedAt;
 
   const CoupleModel({
@@ -66,6 +67,7 @@ class CoupleModel {
     required this.activities,
     required this.locations,
     required this.budget,
+    required this.budgetCurrency,
     required this.updatedAt,
   });
 
@@ -79,6 +81,7 @@ class CoupleModel {
     Set<String>? activities,
     Set<String>? locations,
     double? budget,
+    String? budgetCurrency,
   }) => CoupleModel(
     id: id,
     code: code,
@@ -88,6 +91,7 @@ class CoupleModel {
     activities: activities ?? this.activities,
     locations: locations ?? this.locations,
     budget: budget ?? this.budget,
+    budgetCurrency: budgetCurrency ?? this.budgetCurrency,
     updatedAt: DateTime.now(),
   );
 
@@ -100,6 +104,7 @@ class CoupleModel {
     'activities': activities.toList(),
     'locations': locations.toList(),
     'budget': budget,
+    'budgetCurrency': budgetCurrency,
     'updatedAt': updatedAt.toIso8601String(),
   };
 
@@ -107,6 +112,7 @@ class CoupleModel {
     final rawNames = Map<String, dynamic>.from(
       m['memberNames'] as Map? ?? const {},
     );
+
     return CoupleModel(
       id: m['id'] as String,
       code: m['code'] as String,
@@ -118,6 +124,7 @@ class CoupleModel {
       activities: Set<String>.from(m['activities'] as List? ?? const []),
       locations: Set<String>.from(m['locations'] as List? ?? const []),
       budget: (m['budget'] as num?)?.toDouble() ?? 0,
+      budgetCurrency: m['budgetCurrency']?.toString() ?? 'PHP',
       updatedAt:
           DateTime.tryParse(m['updatedAt']?.toString() ?? '') ?? DateTime.now(),
     );
@@ -220,6 +227,18 @@ class DateSuggestion {
   final String matchTag;
   final String location;
   final String imageUrl;
+  final String placeId;
+  final String country;
+  final String address;
+  final String currency;
+  final double estimatedCostMin;
+  final double estimatedCostMax;
+  final String googleMapsUrl;
+  final String officialWebsiteUrl;
+  final String menuUrl;
+  final String openingHours;
+  final String recommendationReason;
+  final String verifiedSourceUrl;
 
   const DateSuggestion({
     required this.id,
@@ -230,6 +249,18 @@ class DateSuggestion {
     required this.matchTag,
     required this.location,
     required this.imageUrl,
+    this.placeId = '',
+    this.country = '',
+    this.address = '',
+    this.currency = '',
+    this.estimatedCostMin = 0,
+    this.estimatedCostMax = 0,
+    this.googleMapsUrl = '',
+    this.officialWebsiteUrl = '',
+    this.menuUrl = '',
+    this.openingHours = '',
+    this.recommendationReason = '',
+    this.verifiedSourceUrl = '',
   });
 
   Map<String, dynamic> toMap() => {
@@ -241,5 +272,17 @@ class DateSuggestion {
     'matchTag': matchTag,
     'location': location,
     'imageUrl': imageUrl,
+    'placeId': placeId,
+    'country': country,
+    'address': address,
+    'currency': currency,
+    'estimatedCostMin': estimatedCostMin,
+    'estimatedCostMax': estimatedCostMax,
+    'googleMapsUrl': googleMapsUrl,
+    'officialWebsiteUrl': officialWebsiteUrl,
+    'menuUrl': menuUrl,
+    'openingHours': openingHours,
+    'recommendationReason': recommendationReason,
+    'verifiedSourceUrl': verifiedSourceUrl,
   };
 }

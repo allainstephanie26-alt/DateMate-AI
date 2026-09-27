@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../state/app_controller.dart';
 import '../theme.dart';
 import '../widgets/app_bottom_nav_bar.dart';
+import '../widgets/app_card.dart';
+import '../widgets/app_page_header.dart';
 import '../widgets/primary_gradient_button.dart';
 import '../widgets/selectable_chip.dart';
 
 class CouplePreferencesScreen extends StatefulWidget {
-  final AppController controller;
-  final ValueChanged<int> onNavTap;
-  final VoidCallback onSaved;
-
   const CouplePreferencesScreen({
     super.key,
     required this.controller,
     required this.onNavTap,
     required this.onSaved,
   });
+
+  final AppController controller;
+  final ValueChanged<int> onNavTap;
+  final VoidCallback onSaved;
 
   @override
   State<CouplePreferencesScreen> createState() =>
@@ -27,7 +30,10 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
   late Set<String> foods;
   late Set<String> activities;
   late Set<String> locations;
-  double budget = 0;
+  late String currency;
+
+  final locationController = TextEditingController();
+  final budgetController = TextEditingController();
   final codeController = TextEditingController();
 
   static const foodChoices = [
@@ -38,7 +44,15 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
     'Vegetarian',
     'Silog',
     'Cafe',
+    'Dessert',
+    'Food',
+    'Japanese',
+    'Thai',
+    'Pizza',
+    'Steak',
+    'Ice cream',
   ];
+
   static const activityChoices = [
     'Cafe hopping',
     'Movies',
@@ -47,419 +61,500 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
     'Arcade',
     'Picnic',
     'Walk',
+    'Culture',
+    'Adventurous',
+    'Beach',
+    'Photography',
+    'Live music',
+    'Shopping',
+    'Art',
   ];
-  static const locationChoices = [
-    'Angeles City',
-    'Clark',
-    'Mabalacat',
-    'San Fernando',
-    'Nearby',
-  ];
+
+  /// Automatically determines the budget currency from
+  /// the location typed by the user.
+  ///
+  /// This does not require a currency dropdown.
+  static String currencyForLocation(String value) {
+    final text = value.toLowerCase();
+
+    if (RegExp(r'\b(singapore|sg)\b').hasMatch(text)) {
+      return 'SGD';
+    }
+
+    if (RegExp(r'\b(south korea|korea|seoul|kr)\b').hasMatch(text)) {
+      return 'KRW';
+    }
+
+    if (RegExp(r'\b(japan|tokyo|osaka|jp)\b').hasMatch(text)) {
+      return 'JPY';
+    }
+
+    if (RegExp(r'\b(thailand|bangkok|th)\b').hasMatch(text)) {
+      return 'THB';
+    }
+
+    if (RegExp(
+      r'\b(france|paris|germany|italy|rome|euro|eu)\b',
+    ).hasMatch(text)) {
+      return 'EUR';
+    }
+
+    if (RegExp(r'\b(united kingdom|uk|london|england)\b').hasMatch(text)) {
+      return 'GBP';
+    }
+
+    if (RegExp(
+      r'\b(united states|usa|new york|california|america)\b',
+    ).hasMatch(text)) {
+      return 'USD';
+    }
+
+    // Default for locations not recognized by the simple
+    // local currency detector.
+    return 'PHP';
+  }
 
   @override
   void initState() {
     super.initState();
+
     final c = widget.controller.couple;
+
     foods = {...(c?.foods ?? <String>{})};
     activities = {...(c?.activities ?? <String>{})};
     locations = {...(c?.locations ?? <String>{})};
-    budget = c?.budget ?? 0;
+
+    locationController.text = c?.locations.isNotEmpty == true
+        ? c!.locations.first
+        : '';
+
+    currency =
+        c?.budgetCurrency ?? currencyForLocation(locationController.text);
+
+    budgetController.text = c == null || c.budget <= 0
+        ? ''
+        : c.budget.round().toString();
   }
 
   @override
   void dispose() {
+    locationController.dispose();
+    budgetController.dispose();
     codeController.dispose();
     super.dispose();
   }
 
-  void toggle(Set<String> group, String label) => setState(
-    () => group.contains(label) ? group.remove(label) : group.add(label),
-  );
+  void toggle(Set<String> group, String label) {
+    setState(() {
+      if (group.contains(label)) {
+        group.remove(label);
+      } else {
+        group.add(label);
+      }
+    });
+  }
 
-  void message(String text) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  void message(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+  }
 
   Future<void> save() async {
+    final location = locationController.text.trim();
+
+    final detectedCurrency = currencyForLocation(location);
+
+    final budget = double.tryParse(budgetController.text.trim()) ?? 0;
+
+    if (location.isEmpty) {
+      message('Add a preferred location so DateMate knows where to search.');
+      return;
+    }
+
+    if (budget <= 0) {
+      message('Enter your maximum budget per date.');
+      return;
+    }
+
+    setState(() {
+      currency = detectedCurrency;
+      locations = {location};
+    });
+
     await widget.controller.savePreferences(
       foods: foods,
       activities: activities,
       locations: locations,
       budget: budget,
+      budgetCurrency: detectedCurrency,
     );
+
     if (!mounted) return;
+
     message(
       widget.controller.cloud.enabled
           ? 'Preferences saved and synced.'
-          : 'Preferences saved to your device.',
+          : 'Preferences saved to this device.',
     );
+
     widget.onSaved();
   }
 
   Future<void> join() async {
     final ok = await widget.controller.joinCouple(codeController.text);
+
     if (!mounted) return;
+
     message(
       ok
           ? 'Partner linked successfully.'
           : (widget.controller.errorMessage ?? 'Could not link partner.'),
     );
+
     if (ok) {
       final c = widget.controller.couple;
+
       setState(() {
         foods = {...(c?.foods ?? <String>{})};
         activities = {...(c?.activities ?? <String>{})};
         locations = {...(c?.locations ?? <String>{})};
-        budget = c?.budget ?? 0;
+
+        locationController.text = c?.locations.isNotEmpty == true
+            ? c!.locations.first
+            : '';
+
+        currency =
+            c?.budgetCurrency ?? currencyForLocation(locationController.text);
+
+        budgetController.text = c == null || c.budget <= 0
+            ? ''
+            : c.budget.round().toString();
       });
+
       codeController.clear();
     }
   }
 
   Future<void> addCustom(String type, Set<String> target) async {
     final field = TextEditingController();
+
     final value = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          'Add ${type == 'food'
-              ? 'a food'
-              : type == 'activity'
-              ? 'an activity'
-              : 'a location'}',
-        ),
-        content: TextField(
-          controller: field,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(hintText: 'Type your own choice'),
-          onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(type == 'food' ? 'Add a food' : 'Add an activity'),
+          content: TextField(
+            controller: field,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(hintText: 'Type your own choice'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, field.text.trim()),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, field.text.trim());
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
+
     field.dispose();
-    if (value != null && value.trim().isNotEmpty)
-      setState(() => target.add(value.trim()));
+
+    if (value != null && value.trim().isNotEmpty) {
+      setState(() {
+        target.add(value.trim());
+      });
+    }
   }
 
   Future<void> editName() async {
     final field = TextEditingController(
       text: widget.controller.currentUser?.name ?? '',
     );
+
     final value = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Your name'),
-        content: TextField(
-          controller: field,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Enter your name'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Your name'),
+          content: TextField(
+            controller: field,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'Enter your name'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, field.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, field.text.trim());
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
+
     field.dispose();
-    if (value != null && value.isNotEmpty)
+
+    if (value != null && value.isNotEmpty) {
       await widget.controller.updateName(value);
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
     final couple = c.couple;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+                children: [
+                  AppPageHeader(
+                    title: 'Couple Preferences',
+                    subtitle:
+                        'Tell DateMate where you want to go and what you enjoy.',
+                    onBack: widget.onSaved,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Couple Preferences',
-                                style: Theme.of(context).textTheme.headlineSmall
-                                    ?.copyWith(fontSize: 21),
+                        _headerAction(
+                          Icons.sync_rounded,
+                          c.cloud.enabled
+                              ? () async {
+                                  await c.refreshFromCloud();
+
+                                  if (mounted) {
+                                    message('Synced with the cloud.');
+                                  }
+                                }
+                              : null,
+                          'Sync',
+                        ),
+                        _headerAction(
+                          Icons.edit_outlined,
+                          editName,
+                          'Edit name',
+                        ),
+                        _headerAction(Icons.logout_rounded, () async {
+                          await c.logout();
+
+                          if (mounted) {
+                            widget.onSaved();
+                          }
+                        }, 'Log out'),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _partnerCard(couple),
+
+                  const SizedBox(height: 14),
+
+                  if (couple?.memberIds.length != 2) ...[
+                    AppCard(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: codeController,
+                              textCapitalization: TextCapitalization.characters,
+                              decoration: const InputDecoration(
+                                labelText: 'Partner code',
+                                prefixIcon: Icon(Icons.link_rounded),
+                                isDense: true,
                               ),
-                              Text(
-                                'Set what you both like',
-                                style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed: join,
+                            child: const Text('Link'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  _preferenceCard(
+                    title: 'Food you love',
+                    subtitle:
+                        'Selected foods become required matching filters.',
+                    icon: Icons.restaurant_menu_rounded,
+                    selected: foods,
+                    options: foodChoices,
+                    onAdd: () => addCustom('food', foods),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  _preferenceCard(
+                    title: 'Activities you enjoy',
+                    subtitle: 'Select what you actually want to do together.',
+                    icon: Icons.local_activity_outlined,
+                    selected: activities,
+                    options: activityChoices,
+                    onAdd: () => addCustom('activity', activities),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_rounded,
+                              color: AppColors.gradientEnd,
+                              size: 20,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Where do you want to go?',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          'Type a city, district, or area. DateMate will dynamically search real places there.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+
+                        const SizedBox(height: 11),
+
+                        TextField(
+                          controller: locationController,
+                          textCapitalization: TextCapitalization.words,
+                          onChanged: (value) {
+                            setState(() {
+                              currency = currencyForLocation(value);
+                            });
+                          },
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.search_rounded),
+                            hintText: 'e.g. Clark City, Pampanga',
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.blush,
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.currency_exchange_rounded,
+                                size: 17,
+                                color: AppColors.gradientEnd,
+                              ),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  'Budget currency: $currency',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 15,
+                                color: AppColors.gradientEnd,
                               ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: c.cloud.enabled
-                              ? () async {
-                                  await c.refreshFromCloud();
-                                  if (mounted)
-                                    message('Synced with the cloud.');
-                                }
-                              : null,
-                          tooltip: 'Sync now',
-                          icon: const Icon(
-                            Icons.sync,
-                            color: AppColors.primary,
+
+                        const SizedBox(height: 12),
+
+                        TextField(
+                          controller: budgetController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
                           ),
-                        ),
-                        IconButton(
-                          onPressed: editName,
-                          tooltip: 'Edit name',
-                          icon: const Icon(
-                            Icons.edit_outlined,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () async {
-                            await c.logout();
-                            if (mounted) {
-                              setState(() {});
-                              widget.onSaved();
-                            }
-                          },
-                          tooltip: 'Log out',
-                          icon: const Icon(
-                            Icons.logout,
-                            color: AppColors.primary,
+                          decoration: InputDecoration(
+                            prefixText: '$currency  ',
+                            labelText: 'Maximum budget per date',
+                            hintText: 'Enter your amount',
+                            helperText:
+                                'Budget stays user-entered; DateMate filters verified prices when available.',
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.secondary, Color(0xFFF6C9D0)],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Partner link code',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  couple?.code ?? '—',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        fontSize: 26,
-                                        letterSpacing: 2,
-                                      ),
-                                ),
-                              ),
-                              OutlinedButton.icon(
-                                onPressed: couple == null
-                                    ? null
-                                    : () {
-                                        Clipboard.setData(
-                                          ClipboardData(text: couple.code),
-                                        );
-                                        message('Code copied.');
-                                      },
-                                icon: const Icon(Icons.copy, size: 16),
-                                label: const Text('Copy'),
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: AppColors.primary,
-                                  side: BorderSide.none,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            couple?.memberIds.length == 2
-                                ? 'Partner linked. ${couple!.names.join(' & ')} share this couple space.'
-                                : 'Share this code with your partner, then link their account below.',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                        ],
-                      ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  PrimaryGradientButton(
+                    label: 'Save preferences',
+                    icon: Icons.favorite_rounded,
+                    onPressed: save,
+                  ),
+
+                  const SizedBox(height: 9),
+
+                  Center(
+                    child: Text(
+                      c.cloud.enabled
+                          ? 'Your preferences sync through Firebase.'
+                          : 'Your preferences are stored locally. Firebase is optional.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall,
                     ),
-                    if (couple?.memberIds.length == 2) ...[
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: AppColors.outline),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.people_alt_outlined,
-                              color: AppColors.gradientEnd,
-                            ),
-                            const SizedBox(width: 9),
-                            Expanded(
-                              child: Text(
-                                couple!.names.join(' & '),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                            const Icon(
-                              Icons.sync,
-                              size: 17,
-                              color: AppColors.success,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    if (couple?.memberIds.length != 2) ...[
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.outline),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: codeController,
-                                textCapitalization:
-                                    TextCapitalization.characters,
-                                decoration: const InputDecoration(
-                                  labelText: 'Partner code',
-                                  prefixIcon: Icon(Icons.link),
-                                  isDense: true,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            FilledButton(
-                              onPressed: join,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                              ),
-                              child: const Text('Link'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    _groupLabel('Food we love', () => addCustom('food', foods)),
-                    _chips(foods, foodChoices),
-                    const SizedBox(height: 16),
-                    _groupLabel(
-                      'Activities we enjoy',
-                      () => addCustom('activity', activities),
-                    ),
-                    _chips(activities, activityChoices),
-                    const SizedBox(height: 16),
-                    _groupLabel(
-                      'Preferred locations',
-                      () => addCustom('location', locations),
-                    ),
-                    _chips(locations, locationChoices),
-                    const SizedBox(height: 16),
-                    _label('Budget per date'),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.outline),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('₱0'),
-                              Text(
-                                budget <= 0 ? 'Not set' : '₱${budget.round()}',
-                              ),
-                            ],
-                          ),
-                          Slider(
-                            value: budget.clamp(0.0, 3000.0).toDouble(),
-                            min: 0,
-                            max: 3000,
-                            divisions: 12,
-                            activeColor: AppColors.gradientEnd,
-                            label: budget <= 0
-                                ? 'Not set'
-                                : '₱${budget.round()}',
-                            onChanged: (value) =>
-                                setState(() => budget = value),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    PrimaryGradientButton(
-                      label: 'Save our preferences',
-                      icon: Icons.favorite,
-                      onPressed: save,
-                    ),
-                    const SizedBox(height: 8),
-                    Center(
-                      child: Text(
-                        c.cloud.enabled
-                            ? 'Changes sync for both partners.'
-                            : 'Saved locally now; configure Firebase for live multi-device sync.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+
+                  const SizedBox(height: 10),
+                ],
               ),
             ),
+
             AppBottomNavBar(currentIndex: 3, onTap: widget.onNavTap),
           ],
         ),
@@ -467,71 +562,188 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
     );
   }
 
-  Widget _label(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 13,
-        color: AppColors.primary,
+  Widget _partnerCard(dynamic couple) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppColors.softGradient,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.outline),
+        boxShadow: AppShadows.soft,
       ),
-    ),
-  );
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.people_alt_rounded,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 11),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your couple space',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Share the code with your partner to sync your date plan.',
+                      style: TextStyle(fontSize: 10.5, color: AppColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
 
-  Widget _groupLabel(String text, VoidCallback onAdd) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            text,
+          const SizedBox(height: 13),
+
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  couple?.code ?? '—',
+                  style: const TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: couple == null
+                    ? null
+                    : () {
+                        Clipboard.setData(ClipboardData(text: couple.code));
+                        message('Code copied.');
+                      },
+                icon: const Icon(Icons.copy_rounded, size: 15),
+                label: const Text('Copy'),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 5),
+
+          Text(
+            couple?.memberIds.length == 2
+                ? couple!.names.join(' & ')
+                : 'Waiting for your partner to join.',
             style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
               color: AppColors.primary,
             ),
           ),
-        ),
-        InkWell(
-          onTap: onAdd,
-          borderRadius: BorderRadius.circular(16),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            child: Row(
-              children: [
-                Icon(Icons.add, size: 15, color: AppColors.gradientEnd),
-                SizedBox(width: 2),
-                Text(
-                  'Add custom',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.gradientEnd,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
-  Widget _chips(Set<String> selected, List<String> options) {
-    final combined = {...options, ...selected};
-    return Wrap(
-      spacing: 7,
-      runSpacing: 7,
-      children: combined
-          .map(
-            (label) => SelectableChip(
-              label: label,
-              selected: selected.contains(label),
-              onTap: () => toggle(selected, label),
-            ),
-          )
-          .toList(),
+  Widget _preferenceCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Set<String> selected,
+    required List<String> options,
+    required VoidCallback onAdd,
+  }) {
+    final all = {...options, ...selected};
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.blush,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: AppColors.gradientEnd, size: 19),
+              ),
+
+              const SizedBox(width: 9),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              TextButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add, size: 14),
+                label: const Text('Custom'),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 11),
+
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: all
+                .map(
+                  (label) => SelectableChip(
+                    label: label,
+                    selected: selected.contains(label),
+                    onTap: () => toggle(selected, label),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerAction(IconData icon, VoidCallback? onTap, String tooltip) {
+    return IconButton(
+      onPressed: onTap,
+      tooltip: tooltip,
+      style: IconButton.styleFrom(
+        backgroundColor: AppColors.blush,
+        foregroundColor: AppColors.primary,
+      ),
+      icon: Icon(icon, size: 18),
     );
   }
 }

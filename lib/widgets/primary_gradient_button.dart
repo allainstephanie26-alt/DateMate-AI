@@ -2,41 +2,51 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 class PrimaryGradientButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  final IconData? icon;
-  final bool loading;
   const PrimaryGradientButton({
     super.key,
     required this.label,
     required this.onPressed,
     this.icon,
     this.loading = false,
+    this.height = 50,
   });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final bool loading;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: onPressed == null ? .5 : 1,
+    final enabled = onPressed != null && !loading;
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 150),
+      opacity: enabled ? 1 : .48,
       child: Container(
         decoration: BoxDecoration(
-          gradient: AppColors.buttonGradient,
-          borderRadius: BorderRadius.circular(28),
+          gradient: enabled
+              ? AppColors.buttonGradient
+              : const LinearGradient(
+                  colors: [AppColors.muted, AppColors.muted],
+                ),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          boxShadow: enabled ? AppShadows.soft : null,
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: loading ? null : onPressed,
-            borderRadius: BorderRadius.circular(28),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+            onTap: enabled ? onPressed : null,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: SizedBox(
+              height: height,
               child: Center(
                 child: loading
                     ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                          strokeWidth: 2.2,
                           color: Colors.white,
                         ),
                       )
@@ -51,7 +61,8 @@ class PrimaryGradientButton extends StatelessWidget {
                             label,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
                             ),
                           ),
                         ],

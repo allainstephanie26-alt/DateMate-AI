@@ -4,6 +4,7 @@ import '../state/app_controller.dart';
 import '../theme.dart';
 import '../widgets/app_bottom_nav_bar.dart';
 import '../widgets/bucket_list_tile.dart';
+import '../widgets/app_page_header.dart';
 
 class BucketListScreen extends StatefulWidget {
   final AppController controller;
@@ -146,41 +147,26 @@ class _BucketListScreenState extends State<BucketListScreen> {
               padding: const EdgeInsets.fromLTRB(24, 22, 24, 10),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Date Bucket List',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.headlineSmall?.copyWith(fontSize: 21),
-                            ),
-                            Text(
-                              '${all.length} saved · changes persist automatically',
-                              style: Theme.of(context).textTheme.labelSmall,
-                            ),
-                          ],
-                        ),
+                  AppPageHeader(
+                    title: 'Date Bucket List',
+                    subtitle:
+                        '${all.length} saved · keep your best date ideas together',
+                    onBack: () => widget.onNavTap(0),
+                    trailing: IconButton(
+                      onPressed: _addItem,
+                      tooltip: 'Add date',
+                      icon: const CircleAvatar(
+                        radius: 20,
+                        backgroundColor: AppColors.gradientEnd,
+                        child: Icon(Icons.add, color: Colors.white),
                       ),
-                      IconButton(
-                        onPressed: _addItem,
-                        tooltip: 'Add date',
-                        icon: const CircleAvatar(
-                          radius: 20,
-                          backgroundColor: AppColors.gradientEnd,
-                          child: Icon(Icons.add, color: Colors.white),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary,
+                      color: AppColors.blush,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(

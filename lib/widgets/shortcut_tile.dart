@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme.dart';
 
 class ShortcutTile extends StatelessWidget {
@@ -6,6 +7,7 @@ class ShortcutTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+
   const ShortcutTile({
     super.key,
     required this.icon,
@@ -13,6 +15,7 @@ class ShortcutTile extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
   });
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -30,7 +33,7 @@ class ShortcutTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.secondary,
+              backgroundColor: AppColors.blush,
               child: Icon(icon, color: AppColors.primary, size: 18),
             ),
             const SizedBox(height: 8),

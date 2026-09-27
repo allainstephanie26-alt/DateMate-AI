@@ -4,16 +4,11 @@ import '../models/app_models.dart';
 import '../state/app_controller.dart';
 import '../theme.dart';
 import '../widgets/app_bottom_nav_bar.dart';
+import '../widgets/app_card.dart';
 import '../widgets/avatar_badge.dart';
-import '../widgets/shortcut_tile.dart';
+import '../widgets/place_image.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
-  final AppController controller;
-  final ValueChanged<int> onNavTap;
-  final VoidCallback onGetFreshIdea;
-  final VoidCallback onCantDecide;
-  final VoidCallback onOpenBucketList;
-
   const HomeDashboardScreen({
     super.key,
     required this.controller,
@@ -23,26 +18,29 @@ class HomeDashboardScreen extends StatelessWidget {
     required this.onOpenBucketList,
   });
 
+  final AppController controller;
+  final ValueChanged<int> onNavTap;
+  final VoidCallback onGetFreshIdea;
+  final VoidCallback onCantDecide;
+  final VoidCallback onOpenBucketList;
+
   @override
   Widget build(BuildContext context) {
     final user = controller.currentUser!;
-
-    final pendingItems = controller.bucketItems
-        .where((item) => item.status == BucketListStatus.pending)
+    final couple = controller.couple;
+    final pending = controller.bucketItems
+        .where((i) => i.status == BucketListStatus.pending)
         .toList();
-
-    final completedItems = controller.bucketItems
-        .where((item) => item.status == BucketListStatus.done)
+    final completed = controller.bucketItems
+        .where((i) => i.status == BucketListStatus.done)
         .toList();
-
-    final pending = pendingItems.length;
-    final done = completedItems.length;
-
-    final idea = controller.currentSuggestions.isNotEmpty
-        ? controller.currentSuggestions.first
-        : null;
-
-    final savedItems = pendingItems.take(3).toList();
+    final idea = controller.currentSuggestions.isEmpty
+        ? null
+        : controller.currentSuggestions.first;
+    final location = couple?.locations.isNotEmpty == true
+        ? couple!.locations.first
+        : 'Location not set';
+    final partner = _partnerName();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -51,356 +49,187 @@ class HomeDashboardScreen extends StatelessWidget {
           children: [
             Expanded(
               child: RefreshIndicator(
+                color: AppColors.gradientEnd,
                 onRefresh: () async {
-                  await controller.generateSuggestions(controller.mood);
+                  if (couple?.locations.isNotEmpty == true &&
+                      couple!.budget > 0) {
+                    await controller.generateSuggestions(controller.mood);
+                  } else {
+                    await controller.generateMoodIdeas(controller.mood);
+                  }
                 },
-                child: SingleChildScrollView(
+                child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // -----------------------------------------------------
-                      // HEADER
-                      // -----------------------------------------------------
-                      Row(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _dateLabel(),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Hi ${user.name} & $partner',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineSmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        AvatarBadge(
+                          initial: user.name.isEmpty
+                              ? '?'
+                              : user.name[0].toUpperCase(),
+                          backgroundColor: AppColors.blushDeep,
+                          textColor: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        AvatarBadge(
+                          initial: _partnerInitial(),
+                          backgroundColor: AppColors.primary,
+                          textColor: Colors.white,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    _contextBar(
+                      location: location,
+                      budget: couple?.budget ?? 0,
+                      currency: couple?.budgetCurrency ?? 'PHP',
+                    ),
+                    const SizedBox(height: 16),
+                    _hero(context, idea),
+                    const SizedBox(height: 18),
+                    const AppSectionTitle(
+                      title: 'Choose your vibe',
+                      subtitle:
+                          'Your mood is independent from saved preferences.',
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 94,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _moods.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 9),
+                        itemBuilder: (_, i) {
+                          final mood = _moods[i];
+                          final selected =
+                              controller.mood.toLowerCase() ==
+                              mood.label.toLowerCase();
+                          return _MoodTile(
+                            mood: mood,
+                            selected: selected,
+                            onTap: () async {
+                              await controller.generateMoodIdeas(mood.label);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickAction(
+                            icon: Icons.auto_awesome_rounded,
+                            title: 'Find a date',
+                            subtitle: 'Use your preferences',
+                            onTap: onGetFreshIdea,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _QuickAction(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            title: 'Pick for us',
+                            subtitle: 'Talk to DateMate',
+                            onTap: onCantDecide,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    AppSectionTitle(
+                      title: 'Your date bucket',
+                      subtitle:
+                          '${pending.length} saved · ${completed.length} completed',
+                      actionLabel: 'See all',
+                      onAction: onOpenBucketList,
+                    ),
+                    const SizedBox(height: 10),
+                    if (pending.isEmpty)
+                      AppCard(child: _emptyBucket(onGetFreshIdea))
+                    else
+                      ...pending
+                          .take(3)
+                          .map(
+                            (item) => _SavedPreview(
+                              item: item,
+                              onTap: onOpenBucketList,
+                            ),
+                          ),
+                    const SizedBox(height: 18),
+                    AppCard(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
                         children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: AppColors.blush,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.history_rounded,
+                              color: AppColors.gradientEnd,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  _dateLabel(),
-                                  style: Theme.of(context).textTheme.labelSmall,
-                                ),
-                                RichText(
-                                  text: TextSpan(
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.headlineSmall,
-                                    children: [
-                                      TextSpan(text: 'Hi ${user.name} '),
-                                      const TextSpan(
-                                        text: '& ',
-                                        style: TextStyle(
-                                          color: AppColors.gradientEnd,
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: _partnerName(controller),
-                                        style: const TextStyle(
-                                          color: AppColors.gradientEnd,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          AvatarBadge(
-                            initial: user.name.isEmpty
-                                ? '?'
-                                : user.name[0].toUpperCase(),
-                            backgroundColor: const Color(0xFFF8C9D7),
-                            textColor: AppColors.primary,
-                          ),
-                          const SizedBox(width: 5),
-                          AvatarBadge(
-                            initial: _partnerInitial(controller),
-                            backgroundColor: AppColors.primary,
-                            textColor: Colors.white,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 22),
-
-                      // -----------------------------------------------------
-                      // TONIGHT'S IDEA
-                      // -----------------------------------------------------
-                      Container(
-                        width: double.infinity,
-                        height: 190,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.heroCardGradient,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          children: [
-                            Positioned.fill(child: _heroArtwork()),
-                            Positioned.fill(
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent,
-                                      AppColors.primary.withValues(alpha: .88),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(18),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    "TONIGHT'S IDEA",
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: Colors.white70,
-                                          letterSpacing: 1,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    idea?.title ?? 'Build your first date idea',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Georgia',
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 21,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    idea == null
-                                        ? 'Save your preferences to generate ideas.'
-                                        : '${idea.price} · ${idea.location}',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  TextButton(
-                                    onPressed: onGetFreshIdea,
-                                    style: TextButton.styleFrom(
-                                      backgroundColor: Colors.white24,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Get a fresh idea',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        SizedBox(width: 6),
-                                        Icon(Icons.arrow_forward, size: 16),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      // -----------------------------------------------------
-                      // SHORTCUTS
-                      // -----------------------------------------------------
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ShortcutTile(
-                              icon: Icons.shuffle,
-                              title: "Can't decide?",
-                              subtitle: 'Pick for us',
-                              onTap: onCantDecide,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: ShortcutTile(
-                              icon: Icons.checklist,
-                              title: 'Bucket List',
-                              subtitle: '$pending pending · $done done',
-                              onTap: onOpenBucketList,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 22),
-
-                      // -----------------------------------------------------
-                      // SAVED FOR SOON HEADER
-                      // -----------------------------------------------------
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Saved for soon',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: onOpenBucketList,
-                            child: const Text(
-                              'See all',
-                              style: TextStyle(color: AppColors.gradientEnd),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // -----------------------------------------------------
-                      // SAVED ITEMS
-                      // -----------------------------------------------------
-                      if (savedItems.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            'Your bucket list is empty. Add a date idea to get started.',
-                            style: TextStyle(color: AppColors.onSurfaceVariant),
-                          ),
-                        )
-                      else
-                        Column(
-                          children: savedItems.map((item) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 9),
-                              child: InkWell(
-                                onTap: onOpenBucketList,
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: AppColors.outline,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const CircleAvatar(
-                                        radius: 17,
-                                        backgroundColor: AppColors.secondary,
-                                        child: Icon(
-                                          Icons.favorite_border,
-                                          color: AppColors.gradientEnd,
-                                          size: 18,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              item.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            Text(
-                                              '${item.category} · ${item.price}',
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.labelSmall,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.chevron_right,
-                                        color: AppColors.onSurfaceVariant,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-
-                      const SizedBox(height: 10),
-
-                      // -----------------------------------------------------
-                      // LAST DATE TOGETHER
-                      // -----------------------------------------------------
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.outline),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time,
-                                  size: 16,
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
+                                const Text(
                                   'Last date together',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  completed.isEmpty
+                                      ? 'Your completed dates will appear here.'
+                                      : '${completed.first.name} · ${_formatDate(completed.first.completedAt ?? DateTime.now())}',
+                                  style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              completedItems.isEmpty
-                                  ? 'No completed dates yet'
-                                  : '${completedItems.first.name} · '
-                                        '${_formatDate(completedItems.first.completedAt ?? DateTime.now())}',
-                            ),
-                            if (completedItems.isNotEmpty &&
-                                completedItems.first.rating != null)
-                              Row(
-                                children: List.generate(5, (index) {
-                                  final rating = completedItems.first.rating!;
-
-                                  return Icon(
-                                    index < rating.round()
-                                        ? Icons.star
-                                        : Icons.star_border,
-                                    size: 16,
-                                    color: const Color(0xFFD9A441),
-                                  );
-                                }),
-                              ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 18),
+                    Center(
+                      child: Text(
+                        'DateMate AI · made for easier date decisions',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-
-            // -------------------------------------------------------------
-            // BOTTOM NAVIGATION
-            // -------------------------------------------------------------
             AppBottomNavBar(currentIndex: 0, onTap: onNavTap),
           ],
         ),
@@ -408,89 +237,52 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // HERO ARTWORK
-  // -----------------------------------------------------------------------
-
-  Widget _heroArtwork() {
+  Widget _contextBar({
+    required String location,
+    required double budget,
+    required String currency,
+  }) {
     return Container(
-      decoration: const BoxDecoration(gradient: AppColors.heroGradient),
-      child: Stack(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outline.withValues(alpha: .7)),
+      ),
+      child: Row(
         children: [
-          Positioned(
-            left: -30,
-            top: -45,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                color: AppColors.rose.withValues(alpha: .18),
-                shape: BoxShape.circle,
+          const Icon(
+            Icons.location_on_outlined,
+            size: 16,
+            color: AppColors.gradientEnd,
+          ),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              location,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
               ),
             ),
           ),
-          Positioned(
-            right: -35,
-            top: 22,
-            child: Container(
-              width: 125,
-              height: 125,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .10),
-                shape: BoxShape.circle,
-              ),
-            ),
+          Container(width: 1, height: 18, color: AppColors.outline),
+          const SizedBox(width: 10),
+          const Icon(
+            Icons.account_balance_wallet_outlined,
+            size: 16,
+            color: AppColors.gradientEnd,
           ),
-          Positioned(
-            left: 26,
-            top: 28,
-            child: Icon(
-              Icons.favorite,
-              size: 44,
-              color: Colors.white.withValues(alpha: .18),
-            ),
-          ),
-          Positioned(
-            right: 34,
-            top: 30,
-            child: Icon(
-              Icons.local_cafe,
-              size: 42,
-              color: Colors.white.withValues(alpha: .17),
-            ),
-          ),
-          Positioned(
-            left: 100,
-            top: 62,
-            child: Icon(
-              Icons.restaurant,
-              size: 29,
-              color: Colors.white.withValues(alpha: .15),
-            ),
-          ),
-          Positioned(
-            right: 102,
-            top: 68,
-            child: Icon(
-              Icons.local_activity,
-              size: 28,
-              color: Colors.white.withValues(alpha: .15),
-            ),
-          ),
-          Center(
-            child: Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .12),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: .20)),
-              ),
-              child: const Icon(
-                Icons.favorite,
-                color: Colors.white70,
-                size: 34,
-              ),
+          const SizedBox(width: 5),
+          Text(
+            budget > 0 ? '$currency ${budget.round()}' : 'Budget not set',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
             ),
           ),
         ],
@@ -498,46 +290,238 @@ class HomeDashboardScreen extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // PARTNER NAME
-  // -----------------------------------------------------------------------
+  Widget _hero(BuildContext context, DateSuggestion? idea) {
+    return Container(
+      height: 220,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: AppColors.heroGradient,
+        boxShadow: AppShadows.card,
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: idea == null
+                ? _heroArtwork()
+                : PlaceImage(
+                    placeName: idea.title,
+                    source: idea.imageUrl,
+                    height: 220,
+                    borderRadius: 0,
+                  ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    AppColors.primary.withValues(alpha: .93),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .16),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    "TONIGHT'S IDEA",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  idea?.title ?? 'Your next date starts here',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Georgia',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    height: 1.05,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  idea == null
+                      ? 'Choose a vibe or save preferences to discover real places.'
+                      : '${idea.location} · ${idea.price}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _HeroButton(
+                        label: 'Fresh idea',
+                        icon: Icons.refresh_rounded,
+                        onTap: onGetFreshIdea,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _HeroButton(
+                        label: 'Pick for us',
+                        icon: Icons.auto_awesome_rounded,
+                        onTap: onCantDecide,
+                        filled: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  String _partnerName(AppController controller) {
-    final couple = controller.couple;
+  Widget _heroArtwork() {
+    return Stack(
+      children: [
+        Positioned(
+          left: -45,
+          top: -55,
+          child: _orb(150, AppColors.rose.withValues(alpha: .22)),
+        ),
+        Positioned(
+          right: -35,
+          top: 15,
+          child: _orb(125, Colors.white.withValues(alpha: .10)),
+        ),
+        Positioned(
+          left: 30,
+          top: 35,
+          child: Icon(
+            Icons.favorite_rounded,
+            size: 48,
+            color: Colors.white.withValues(alpha: .18),
+          ),
+        ),
+        Positioned(
+          right: 32,
+          top: 38,
+          child: Icon(
+            Icons.local_cafe_rounded,
+            size: 44,
+            color: Colors.white.withValues(alpha: .16),
+          ),
+        ),
+        Positioned(
+          left: 105,
+          top: 72,
+          child: Icon(
+            Icons.restaurant_rounded,
+            size: 30,
+            color: Colors.white.withValues(alpha: .14),
+          ),
+        ),
+        Positioned(
+          right: 100,
+          top: 74,
+          child: Icon(
+            Icons.movie_rounded,
+            size: 30,
+            color: Colors.white.withValues(alpha: .14),
+          ),
+        ),
+        Center(
+          child: Container(
+            width: 82,
+            height: 82,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: .10),
+              border: Border.all(color: Colors.white.withValues(alpha: .22)),
+            ),
+            child: const Icon(
+              Icons.favorite_rounded,
+              color: Colors.white70,
+              size: 36,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-    if (couple == null || couple.memberIds.length < 2) {
-      return 'your partner';
-    }
+  Widget _orb(double size, Color color) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+  );
 
-    final partnerId = couple.memberIds.firstWhere(
+  Widget _emptyBucket(VoidCallback onTap) => Column(
+    children: [
+      Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: AppColors.blush,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(
+          Icons.favorite_border_rounded,
+          color: AppColors.gradientEnd,
+        ),
+      ),
+      const SizedBox(height: 10),
+      const Text(
+        'Your bucket is waiting',
+        style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        'Save places you want to try together.',
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: AppColors.muted, fontSize: 11.5),
+      ),
+      const SizedBox(height: 10),
+      OutlinedButton(onPressed: onTap, child: const Text('Discover a date')),
+    ],
+  );
+
+  String _partnerName() {
+    final c = controller.couple;
+    if (c == null || c.memberIds.length < 2) return 'your partner';
+    final id = c.memberIds.firstWhere(
       (id) => id != controller.currentUser!.id,
       orElse: () => '',
     );
-
-    return couple.memberNames[partnerId] ?? 'your partner';
+    return c.memberNames[id] ?? 'your partner';
   }
 
-  // -----------------------------------------------------------------------
-  // PARTNER INITIAL
-  // -----------------------------------------------------------------------
-
-  String _partnerInitial(AppController controller) {
-    final name = _partnerName(controller);
-
-    if (name == 'your partner') {
-      return '♥';
-    }
-
-    if (name.trim().isEmpty) {
-      return '?';
-    }
-
-    return name.trim()[0].toUpperCase();
+  String _partnerInitial() {
+    final name = _partnerName();
+    if (name == 'your partner') return '♥';
+    return name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
   }
-
-  // -----------------------------------------------------------------------
-  // DATE FORMAT
-  // -----------------------------------------------------------------------
 
   String _formatDate(DateTime date) {
     const months = [
@@ -554,17 +538,10 @@ class HomeDashboardScreen extends StatelessWidget {
       'Nov',
       'Dec',
     ];
-
     return '${months[date.month - 1]} ${date.day}';
   }
 
-  // -----------------------------------------------------------------------
-  // CURRENT DATE LABEL
-  // -----------------------------------------------------------------------
-
   String _dateLabel() {
-    final now = DateTime.now();
-
     const days = [
       'Monday',
       'Tuesday',
@@ -574,12 +551,6 @@ class HomeDashboardScreen extends StatelessWidget {
       'Saturday',
       'Sunday',
     ];
-
-    return '${days[now.weekday - 1]}, '
-        '${now.day} ${_month(now.month)}';
-  }
-
-  String _month(int month) {
     const months = [
       'January',
       'February',
@@ -594,7 +565,237 @@ class HomeDashboardScreen extends StatelessWidget {
       'November',
       'December',
     ];
+    final now = DateTime.now();
+    return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
+  }
 
-    return months[month - 1];
+  static const _moods = <_MoodData>[
+    _MoodData('Chill', Icons.spa_rounded),
+    _MoodData('Foodie', Icons.restaurant_rounded),
+    _MoodData('Adventurous', Icons.explore_rounded),
+    _MoodData('Cheap date', Icons.savings_outlined),
+  ];
+}
+
+class _MoodData {
+  const _MoodData(this.label, this.icon);
+  final String label;
+  final IconData icon;
+}
+
+class _MoodTile extends StatelessWidget {
+  const _MoodTile({
+    required this.mood,
+    required this.selected,
+    required this.onTap,
+  });
+  final _MoodData mood;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 170),
+        width: 104,
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.outline,
+          ),
+          boxShadow: selected ? AppShadows.soft : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              mood.icon,
+              size: 22,
+              color: selected ? Colors.white : AppColors.gradientEnd,
+            ),
+            const Spacer(),
+            Text(
+              mood.label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: selected ? Colors.white : AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.outline),
+          boxShadow: AppShadows.soft,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.blush,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: AppColors.gradientEnd, size: 19),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: Theme.of(context).textTheme.labelSmall),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroButton extends StatelessWidget {
+  const _HeroButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.filled = false,
+  });
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: filled ? Colors.white : Colors.white.withValues(alpha: .14),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: filled ? AppColors.primary : Colors.white,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: filled ? AppColors.primary : Colors.white,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SavedPreview extends StatelessWidget {
+  const _SavedPreview({required this.item, required this.onTap});
+  final BucketListItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 9),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(13),
+              child: SizedBox(
+                width: 62,
+                height: 62,
+                child: PlaceImage(
+                  placeName: item.name,
+                  source: item.imageUrl,
+                  height: 62,
+                  borderRadius: 0,
+                ),
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${item.category} · ${item.price}',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+          ],
+        ),
+      ),
+    );
   }
 }
