@@ -1,6 +1,6 @@
 import 'package:device_preview/device_preview.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import 'screens/ai_recommendation_screen.dart';
 import 'screens/bucket_list_screen.dart';
@@ -16,26 +16,26 @@ import 'theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize local database
+  // Initialize local database.
   final localDatabase = LocalDatabase();
   await localDatabase.init();
 
-  // Initialize cloud synchronization
+  // Initialize cloud synchronization.
   final cloudSync = CloudSyncService();
   await cloudSync.init();
 
-  // Initialize recommendation service
+  // Initialize recommendation service.
   final recommendations = RecommendationService();
 
-  // Create the main application controller
+  // Create the main application controller.
   final controller = AppController(localDatabase, recommendations, cloudSync);
 
-  // Load saved application data
+  // Load saved application data.
   await controller.load();
 
   runApp(
     DevicePreview(
-      enabled: kDebugMode,
+      enabled: kIsWeb,
       builder: (context) => DateMateApp(controller: controller),
     ),
   );
@@ -51,9 +51,14 @@ class DateMateApp extends StatelessWidget {
     return MaterialApp(
       title: 'DateMate AI',
       debugShowCheckedModeBanner: false,
+
       theme: appTheme,
+
+      // Device Preview support.
       locale: DevicePreview.locale(context),
+
       builder: DevicePreview.appBuilder,
+
       home: RootShell(controller: controller),
     );
   }
@@ -93,7 +98,7 @@ class _RootShellState extends State<RootShell> {
       );
     }
 
-    // Main 5-screen navigation.
+    // Main five-screen navigation.
     switch (_tabIndex) {
       case 1:
         return AiRecommendationScreen(
