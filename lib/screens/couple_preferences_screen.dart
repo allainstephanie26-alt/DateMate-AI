@@ -31,6 +31,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
   late Set<String> activities;
   late Set<String> locations;
   late String currency;
+  bool _saved = false;
 
   final locationController = TextEditingController();
   final budgetController = TextEditingController();
@@ -134,6 +135,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
     budgetController.text = c == null || c.budget <= 0
         ? ''
         : c.budget.round().toString();
+    _saved = c != null && c.locations.isNotEmpty && c.budget > 0;
   }
 
   @override
@@ -146,6 +148,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
 
   void toggle(Set<String> group, String label) {
     setState(() {
+      _saved = false;
       if (group.contains(label)) {
         group.remove(label);
       } else {
@@ -180,6 +183,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
     setState(() {
       currency = detectedCurrency;
       locations = {location};
+      _saved = false;
     });
 
     await widget.controller.savePreferences(
@@ -192,13 +196,13 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
 
     if (!mounted) return;
 
+    setState(() => _saved = true);
+
     message(
       widget.controller.cloud.enabled
           ? 'Preferences saved and synced.'
           : 'Preferences saved to this device.',
     );
-
-    widget.onSaved();
   }
 
   Future<void> join() async {
@@ -230,6 +234,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
         budgetController.text = c == null || c.budget <= 0
             ? ''
             : c.budget.round().toString();
+        _saved = c != null && c.locations.isNotEmpty && c.budget > 0;
       });
 
       codeController.clear();
@@ -273,6 +278,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
     if (value != null && value.trim().isNotEmpty) {
       setState(() {
         target.add(value.trim());
+        _saved = false;
       });
     }
   }
@@ -465,6 +471,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
                           onChanged: (value) {
                             setState(() {
                               currency = currencyForLocation(value);
+                              _saved = false;
                             });
                           },
                           decoration: const InputDecoration(
@@ -518,6 +525,9 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
+                          onChanged: (_) {
+                            if (_saved) setState(() => _saved = false);
+                          },
                           decoration: InputDecoration(
                             prefixText: '$currency  ',
                             labelText: 'Maximum budget per date',
@@ -533,9 +543,9 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
                   const SizedBox(height: 16),
 
                   PrimaryGradientButton(
-                    label: 'Save preferences',
-                    icon: Icons.favorite_rounded,
-                    onPressed: save,
+                    label: _saved ? 'Saved' : 'Save preferences',
+                    icon: _saved ? Icons.check_rounded : Icons.favorite_rounded,
+                    onPressed: _saved ? null : save,
                   ),
 
                   const SizedBox(height: 9),

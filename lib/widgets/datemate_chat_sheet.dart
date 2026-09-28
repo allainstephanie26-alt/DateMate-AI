@@ -218,18 +218,7 @@ class _DateMateChatSheetState extends State<DateMateChatSheet> {
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
               child: Row(
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.buttonGradient,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Colors.white,
-                    ),
-                  ),
+                  const _DateMateAvatar(size: 46),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
@@ -249,6 +238,25 @@ class _DateMateChatSheetState extends State<DateMateChatSheet> {
                             color: AppColors.muted,
                             fontSize: 11,
                           ),
+                        ),
+                        SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              size: 7,
+                              color: AppColors.success,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Ready to help',
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -273,41 +281,108 @@ class _DateMateChatSheetState extends State<DateMateChatSheet> {
               ),
             const SizedBox(height: 8),
             Expanded(
-              child: ListView.builder(
-                controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
-                itemCount: _messages.length,
-                itemBuilder: (_, i) {
-                  final line = _messages[i];
-                  return Align(
-                    alignment: line.fromUser
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 320),
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 10,
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFDFC),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: AppColors.outline.withValues(alpha: .65),
+                  ),
+                ),
+                child: ListView.builder(
+                  controller: _scroll,
+                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                  itemCount: _messages.length + (_sending ? 1 : 0),
+                  itemBuilder: (_, i) {
+                    if (_sending && i == _messages.length) {
+                      return const _TypingBubble();
+                    }
+                    final line = _messages[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        mainAxisAlignment: line.fromUser
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (!line.fromUser) ...[
+                            const _DateMateAvatar(size: 30),
+                            const SizedBox(width: 7),
+                          ],
+                          Flexible(
+                            child: Container(
+                              constraints: const BoxConstraints(maxWidth: 290),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: line.fromUser
+                                    ? AppColors.buttonGradient
+                                    : null,
+                                color: line.fromUser ? null : Colors.white,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: const Radius.circular(18),
+                                  topRight: const Radius.circular(18),
+                                  bottomLeft: Radius.circular(
+                                    line.fromUser ? 18 : 5,
+                                  ),
+                                  bottomRight: Radius.circular(
+                                    line.fromUser ? 5 : 18,
+                                  ),
+                                ),
+                                border: line.fromUser
+                                    ? null
+                                    : Border.all(
+                                        color: AppColors.outline.withValues(
+                                          alpha: .7,
+                                        ),
+                                      ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(
+                                      alpha: .04,
+                                    ),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                line.text,
+                                style: TextStyle(
+                                  color: line.fromUser
+                                      ? Colors.white
+                                      : AppColors.ink,
+                                  height: 1.4,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (line.fromUser) ...[
+                            const SizedBox(width: 7),
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: const BoxDecoration(
+                                color: AppColors.blush,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.person_rounded,
+                                color: AppColors.primary,
+                                size: 17,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      decoration: BoxDecoration(
-                        color: line.fromUser ? AppColors.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: line.fromUser
-                            ? null
-                            : Border.all(color: AppColors.outline),
-                      ),
-                      child: Text(
-                        line.text,
-                        style: TextStyle(
-                          color: line.fromUser ? Colors.white : AppColors.ink,
-                          height: 1.3,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
             SingleChildScrollView(
@@ -333,22 +408,52 @@ class _DateMateChatSheetState extends State<DateMateChatSheet> {
                       enabled: !_sending,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(
-                        hintText: 'Tell DateMate what you want...',
+                      decoration: InputDecoration(
+                        hintText: 'Ask for a vibe, food, or activity...',
                         isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        prefixIcon: const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 18,
+                          color: AppColors.muted,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: AppColors.outline,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: AppColors.outline,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(
+                            color: AppColors.gradientEnd,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Material(
-                    color: AppColors.gradientEnd,
-                    borderRadius: BorderRadius.circular(15),
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(17),
                     child: InkWell(
                       onTap: _sending ? null : () => _send(),
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(17),
                       child: const SizedBox(
-                        width: 50,
-                        height: 50,
+                        width: 52,
+                        height: 52,
                         child: Icon(
                           Icons.arrow_upward_rounded,
                           color: Colors.white,
@@ -468,6 +573,136 @@ class _SelectedPlaceCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Locally rendered assistant avatar: no network image or API key is required.
+/// The gradient orb and sparkle face keep the chatbot visually branded even offline.
+class _DateMateAvatar extends StatelessWidget {
+  const _DateMateAvatar({this.size = 42});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: AppColors.buttonGradient,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gradientEnd.withValues(alpha: .22),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(Icons.smart_toy_rounded, color: Colors.white, size: size * .52),
+          Positioned(
+            right: size * .10,
+            top: size * .08,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: AppColors.peach,
+              size: size * .23,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TypingBubble extends StatefulWidget {
+  const _TypingBubble();
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          const _DateMateAvatar(size: 30),
+          const SizedBox(width: 7),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+                bottomLeft: Radius.circular(5),
+              ),
+              border: Border.all(color: AppColors.outline),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (index) {
+                return AnimatedBuilder(
+                  animation: _controller,
+                  builder: (_, __) {
+                    final phase = (_controller.value * 3 - index).clamp(
+                      0.0,
+                      1.0,
+                    );
+                    final lift = phase < .5 ? phase * 5 : (1 - phase) * 5;
+                    return Container(
+                      margin: EdgeInsets.only(left: index == 0 ? 0 : 5),
+                      transform: Matrix4.translationValues(
+                        0,
+                        -lift.toDouble(),
+                        0,
+                      ),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: AppColors.gradientEnd.withValues(
+                          alpha: (.55 + phase * .45).toDouble(),
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 7),
+            child: Text(
+              'DateMate is typing',
+              style: TextStyle(fontSize: 9, color: AppColors.muted),
             ),
           ),
         ],

@@ -6,18 +6,6 @@ import 'package:http/http.dart' as http;
 import '../models/app_models.dart';
 import '../models/curated_place.dart';
 
-/// Discovers real-world date places from OpenStreetMap's public data services.
-///
-/// Important design choices:
-/// - searches happen only after an explicit user action, never autocomplete;
-/// - location searches are cached in memory;
-/// - the app never invents names, addresses, prices, hours or menus;
-/// - the bundled curated catalog remains the offline fallback;
-/// - OSM attribution is shown in the recommendation screen.
-///
-/// For a large public Play Store deployment, move these requests behind a
-/// controlled proxy or a dedicated place-data provider so traffic and service
-/// limits can be managed independently of the mobile clients.
 class PlaceDiscoveryService {
   PlaceDiscoveryService({http.Client? client})
     : _client = client ?? http.Client();
@@ -30,8 +18,8 @@ class PlaceDiscoveryService {
     'https://overpass.private.coffee/api/interpreter',
   ];
 
-  static const int radiusMeters = 8000;
-  static const int maxResults = 60;
+  static const int radiusMeters = 15000;
+  static const int maxResults = 100;
 
   final Map<String, _GeocodedLocation?> _locationCache = {};
   final Map<String, List<CuratedPlace>> _placeCache = {};
@@ -136,7 +124,19 @@ class PlaceDiscoveryService {
               .toString();
       final state = (address['state'] ?? address['state_district'] ?? '')
           .toString();
-      final country = (address['country'] ?? '').toString();
+      final country = (address['country'] ?? '').toString().trim();
+      final normalizedCountry = country.toLowerCase();
+      // DateMate-AI is Philippines-only. If the selected location resolves
+      // outside the Philippines, do not query or display foreign places.
+      final isPhilippines =
+          normalizedCountry == 'philippines' ||
+          normalizedCountry == 'the philippines' ||
+          normalizedCountry == 'ph' ||
+          normalizedCountry == 'republic of the philippines';
+      if (!isPhilippines) {
+        _locationCache[key] = null;
+        return null;
+      }
       final result = _GeocodedLocation(
         lat: lat,
         lon: lon,
@@ -284,6 +284,16 @@ out center tags;
     final tags = Map<String, dynamic>.from(rawTags);
     final name = tags['name']?.toString().trim() ?? '';
     if (name.isEmpty) return null;
+    // The geocoded search area is already Philippines-only, but keep this
+    // guard so no foreign-tagged OSM element can leak into the UI.
+    final taggedCountry =
+        tags['addr:country']?.toString().trim().toLowerCase() ?? '';
+    if (taggedCountry.isNotEmpty &&
+        taggedCountry != 'ph' &&
+        taggedCountry != 'philippines' &&
+        taggedCountry != 'the philippines') {
+      return null;
+    }
 
     final type = element['type']?.toString() ?? 'node';
     final osmId = element['id']?.toString() ?? name;

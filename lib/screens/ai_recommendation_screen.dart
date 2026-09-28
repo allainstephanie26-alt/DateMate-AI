@@ -32,6 +32,7 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
   @override
   void initState() {
     super.initState();
+    widget.controller.addListener(_controllerChanged);
     mood = widget.controller.mood;
 
     if (widget.controller.currentSuggestions.isEmpty) {
@@ -39,6 +40,16 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
         (_) => widget.controller.generateMoodIdeas(mood),
       );
     }
+  }
+
+  void _controllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_controllerChanged);
+    super.dispose();
   }
 
   Future<void> _generate() async {
@@ -303,14 +314,17 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
                         (s) => DateSuggestionCard(
                           suggestion: s,
                           isFavorite: c.isFavorite(s.id),
-                          onAddToBucket: () async {
-                            final added = await c.addToBucket(s);
-                            _toast(
-                              added
-                                  ? '${s.title} added to your Bucket List.'
-                                  : 'That place is already saved.',
-                            );
-                          },
+                          isSaved: c.isSavedSuggestion(s),
+                          onAddToBucket: c.isSavedSuggestion(s)
+                              ? null
+                              : () async {
+                                  final added = await c.addToBucket(s);
+                                  _toast(
+                                    added
+                                        ? '${s.title} added to your Bucket List.'
+                                        : 'That place is already saved.',
+                                  );
+                                },
                           onFavorite: () => c.toggleFavorite(s.id),
                           onDetails: () => _showDetails(s),
                         ),

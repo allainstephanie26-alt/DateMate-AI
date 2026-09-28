@@ -19,10 +19,6 @@ class AiChatResult {
   final DateSuggestion? selectedPlace;
 }
 
-/// DateMate's conversational layer is deliberately separated from the data
-/// and recommendation layers. It interprets the user's request, then sends
-/// the resulting constraints through the same RecommendationService used by
-/// Generate Ideas. It never invents place facts.
 class AiChatService {
   const AiChatService(this._recommendations);
 

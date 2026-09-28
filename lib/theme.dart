@@ -6,6 +6,7 @@ class AppColors {
   static const primary = Color(0xFF64172F);
   static const primaryDark = Color(0xFF431020);
   static const gradientEnd = Color(0xFFD6427D);
+  static const secondary = gradientEnd;
   static const rose = Color(0xFFF29BB7);
   static const blush = Color(0xFFFCE5EC);
   static const blushDeep = Color(0xFFF7D0DC);

@@ -1,9 +1,6 @@
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 
-/// A small persistent local database for the finals build.
-/// Hive uses IndexedDB on web and a local database on mobile platforms,
-/// so the same Dart code persists data in Chrome, Android and iOS.
 class LocalDatabase {
   static const _boxName = 'datemate_database';
   late Box<String> _box;

@@ -10,6 +10,7 @@ class DateSuggestionCard extends StatelessWidget {
     super.key,
     required this.suggestion,
     required this.isFavorite,
+    required this.isSaved,
     required this.onAddToBucket,
     required this.onFavorite,
     this.onDetails,
@@ -17,7 +18,8 @@ class DateSuggestionCard extends StatelessWidget {
 
   final DateSuggestion suggestion;
   final bool isFavorite;
-  final VoidCallback onAddToBucket;
+  final bool isSaved;
+  final VoidCallback? onAddToBucket;
   final VoidCallback onFavorite;
   final VoidCallback? onDetails;
 
@@ -153,8 +155,10 @@ class DateSuggestionCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: PrimaryGradientButton(
-                        label: 'Save date',
-                        icon: Icons.favorite_rounded,
+                        label: isSaved ? 'Saved' : 'Save date',
+                        icon: isSaved
+                            ? Icons.check_rounded
+                            : Icons.favorite_rounded,
                         onPressed: onAddToBucket,
                         height: 46,
                       ),

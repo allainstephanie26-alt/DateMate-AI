@@ -70,29 +70,85 @@ class RecommendationService {
     Set<String>? activitiesOverride,
     bool preferCheapest = false,
   }) async {
-    if (couple?.locations.isNotEmpty == true) {
-      final effectiveCouple = couple!.copyWith(
-        foods: foodsOverride,
-        activities: activitiesOverride,
-      );
+    // Preserve any explicitly saved or chat-selected filters. A mood label must
+    // never widen a request such as "Korean BBQ in Angeles City" into cafes,
+    // parks, or unrelated restaurants.
+    final effectiveCouple = couple?.copyWith(
+      foods: foodsOverride,
+      activities: activitiesOverride,
+    );
+
+    if (effectiveCouple?.locations.isNotEmpty == true) {
       final dynamicPlaces = await _discovery.discover(
-        couple: effectiveCouple,
+        couple: effectiveCouple!,
         mood: mood,
       );
-      final moodPlaces = _filterMood(
-        dynamicPlaces,
-        mood,
-      ).where((place) => !excludedPlaceIds.contains(place.id)).toList();
-      if (moodPlaces.isNotEmpty) {
+      final hasExplicitCategory =
+          effectiveCouple.foods.isNotEmpty ||
+          effectiveCouple.activities.isNotEmpty;
+
+      final List<CuratedPlace> candidates;
+      if (hasExplicitCategory) {
+        // Explicit food/activity filters take priority over mood suggestions.
+        candidates = _filterPlaces(
+          dynamicPlaces,
+          couple: effectiveCouple,
+          mood: mood,
+          excludedPlaceIds: excludedPlaceIds,
+        );
+      } else {
+        // Mood is only a soft preference when the user has not chosen a
+        // specific food/activity. Location and verified budget constraints
+        // still remain hard filters.
+        final moodIds = _filterMood(
+          dynamicPlaces,
+          mood,
+        ).map((place) => place.id).toSet();
+        candidates = _filterPlaces(
+          dynamicPlaces.where((place) => moodIds.contains(place.id)),
+          couple: effectiveCouple,
+          mood: mood,
+          excludedPlaceIds: excludedPlaceIds,
+        );
+      }
+
+      if (candidates.isNotEmpty) {
         return _rank(
-          moodPlaces,
+          candidates,
           couple: effectiveCouple,
           mood: mood,
           seed: seed,
           preferCheapest: preferCheapest,
         );
       }
+
+      // Never fall back to unrelated mood places when explicit location or
+      // category preferences exist. Curated entries are filtered by the same
+      // saved constraints; if none match, return an empty list honestly.
+      return generate(
+        couple: effectiveCouple,
+        mood: mood,
+        seed: seed,
+        excludedPlaceIds: excludedPlaceIds,
+        preferCheapest: preferCheapest,
+      );
     }
+
+    // Without a saved location, a transient custom category can still filter
+    // the curated offline catalog. Build a neutral filter profile rather than
+    // silently discarding the requested food/activity.
+    if (effectiveCouple != null &&
+        (effectiveCouple.foods.isNotEmpty ||
+            effectiveCouple.activities.isNotEmpty)) {
+      return generate(
+        couple: effectiveCouple,
+        mood: mood,
+        seed: seed,
+        excludedPlaceIds: excludedPlaceIds,
+        preferCheapest: preferCheapest,
+      );
+    }
+
     return generateForMood(
       mood,
       seed: seed,
@@ -109,7 +165,7 @@ class RecommendationService {
     bool preferCheapest = false,
   }) {
     final places = _filterPlaces(
-      CuratedPlaceService.places,
+      CuratedPlaceService.places.where(_isPhilippinesPlace),
       couple: couple,
       mood: mood,
       excludedPlaceIds: excludedPlaceIds,
@@ -130,13 +186,21 @@ class RecommendationService {
     bool preferCheapest = false,
   }) => _rank(
     _filterMood(
-      CuratedPlaceService.places,
+      CuratedPlaceService.places.where(_isPhilippinesPlace),
       mood,
     ).where((place) => !excludedPlaceIds.contains(place.id)).toList(),
     mood: mood,
     seed: seed,
     preferCheapest: preferCheapest,
   );
+
+  bool _isPhilippinesPlace(CuratedPlace place) {
+    final country = place.country.trim().toLowerCase();
+    return country == 'philippines' ||
+        country == 'the philippines' ||
+        country == 'ph' ||
+        country == 'republic of the philippines';
+  }
 
   List<CuratedPlace> _filterPlaces(
     Iterable<CuratedPlace> source, {
@@ -145,6 +209,9 @@ class RecommendationService {
     Set<String> excludedPlaceIds = const <String>{},
   }) {
     return source.where((place) {
+      // DateMate-AI is intentionally Philippines-only. Never allow a bundled
+      // or dynamically discovered place from another country into results.
+      if (!_isPhilippinesPlace(place)) return false;
       if (excludedPlaceIds.contains(place.id)) return false;
       if (couple.locations.isNotEmpty &&
           !couple.locations.any(place.matchesLocation))
@@ -155,10 +222,12 @@ class RecommendationService {
       if (couple.activities.isNotEmpty &&
           !_matchesAnyRequested(couple.activities, place, food: false))
         return false;
-      // A fixed budget is a hard ceiling. Unknown prices cannot be treated as fitting the budget.
+      // Apply the budget as a hard ceiling only when the place-data source
+      // provides a verified maximum. Unknown prices stay eligible and are
+      // labeled as unverified instead of disappearing from the results.
       if (couple.budget > 0 &&
-          (place.estimatedCostMax <= 0 ||
-              place.estimatedCostMax > couple.budget))
+          place.estimatedCostMax > 0 &&
+          place.estimatedCostMax > couple.budget)
         return false;
       return true;
     }).toList();
@@ -354,7 +423,7 @@ class RecommendationService {
     final rotation = preferCheapest ? 0 : seed % scored.length;
     final rotated = [...scored.skip(rotation), ...scored.take(rotation)];
     return rotated
-        .take(8)
+        .take(30)
         .map((entry) => _toSuggestion(entry.key, couple, mood))
         .toList();
   }
@@ -381,7 +450,7 @@ class RecommendationService {
       price: place.estimatedCostMax > 0
           ? place.priceLabel
           : 'Price not verified',
-      category: place.categories.isNotEmpty ? place.categories.first : 'Date',
+      category: _displayCategory(place, couple),
       matchTag: reasons.isEmpty ? 'DateMate pick' : reasons.join(' · '),
       location: place.locationLabel,
       imageUrl: place.imageAsset,
@@ -398,6 +467,19 @@ class RecommendationService {
       recommendationReason: _reason(place, couple, mood),
       verifiedSourceUrl: place.verifiedSourceUrl,
     );
+  }
+
+  String _displayCategory(CuratedPlace place, CoupleModel? couple) {
+    if (couple != null) {
+      for (final wanted in couple.foods) {
+        if (_matchesRequested(wanted, place, food: true)) return wanted;
+      }
+      for (final wanted in couple.activities) {
+        if (_matchesRequested(wanted, place, food: false)) return wanted;
+      }
+    }
+    if (place.foodTypes.isNotEmpty) return place.foodTypes.first;
+    return place.categories.isNotEmpty ? place.categories.first : 'Date';
   }
 
   String _reason(CuratedPlace place, CoupleModel? couple, String mood) {

@@ -494,11 +494,23 @@ class AppController extends ChangeNotifier {
     );
   }
 
+  bool isSavedSuggestion(DateSuggestion suggestion) {
+    return bucketItems.any(
+      (item) =>
+          item.name.trim().toLowerCase() ==
+              suggestion.title.trim().toLowerCase() ||
+          (suggestion.placeId.isNotEmpty &&
+              item.id.endsWith(suggestion.placeId)),
+    );
+  }
+
   Future<bool> addToBucket(DateSuggestion suggestion) async {
     if (couple == null || currentUser == null) return false;
-    if (bucketItems.any((item) => item.name == suggestion.title)) return false;
+    if (isSavedSuggestion(suggestion)) return false;
     final item = BucketListItem(
-      id: _id('bucket'),
+      id: suggestion.placeId.isNotEmpty
+          ? 'bucket-${suggestion.placeId}'
+          : _id('bucket'),
       name: suggestion.title,
       category: suggestion.category,
       price: suggestion.price,

@@ -321,40 +321,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 13),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.blush.withValues(alpha: .65),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              c.cloud.enabled
-                                  ? Icons.cloud_done_outlined
-                                  : Icons.phone_android_rounded,
-                              size: 14,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                c.cloud.enabled
-                                    ? 'Firebase auth + cloud sync enabled'
-                                    : 'Local mode works without Firebase',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 9.5,
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
+                      Center(
+                        child: Text(
+                          'Your account data is stored securely for your DateMate session.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelSmall,
                         ),
                       ),
                     ],
