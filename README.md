@@ -29,23 +29,25 @@ this paragraph with them:
 
 ### Login / Sign Up
 
-![Login / Sign Up](docs/assets/login.png)
+![Login / Sign Up](docs/assets/login(1).png)
 
 ### Couple Preferences
 
-![Couple Preferences](docs/assets/preferences.png)
+![Couple Preferences](docs/assets/preferences(1).png)
 
 ### Home Dashboard
 
-![Home Dashboard](docs/assets/home.png)
+![Home Dashboard](docs/assets/home(1).png)
 
 ### AI Date Recommendation
 
-![AI Date Recommendation](docs/assets/ai_recommendation.png)
+![AI Date Recommendation](docs/assets/ai_recommendation(1).png)
+
+![AI Date Recommendation](docs/assets/ai_chat.png)
 
 ### Date Bucket List
 
-![Date Bucket List](docs/assets/bucket_list.png)
+![Date Bucket List](docs/assets/bucket_list(1).png)
 
 A repo without screenshots reads as abandoned, whatever the code says.
 
@@ -160,8 +162,8 @@ integrated into the project.
 - AI assistance — used for development support, debugging, and code review.
 
 ## AI use
-ChatGPT and Claude were used as assistants for troubleshooting code errors
-during the development of DateMate AI. They were mainly used to help identify
+Claude is used as assistants for troubleshooting code errors
+during the development of DateMate AI. It is only mainly used to help identify
 and resolve Flutter and Dart errors encountered during development.
 
 ## Licence
