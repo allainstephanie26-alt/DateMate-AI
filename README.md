@@ -11,7 +11,7 @@
 > DateMate AI is a mobile-friendly date planning application that helps couples discover date ideas, manage their preferences, and save activities to a shared date bucket list.
 
 **Live demo:** https://allainstephanie26-alt.github.io/DateMate-AI/ <!-- GitHub Pages is set up already; replace if you host elsewhere -->
-**Demo video:** `docs/demo.mp4` (link it here once it exists)
+**Demo video:** `docs/demo.mp4` https://drive.google.com/file/d/1F0AOerwApI-A3Kt_fmHVDIr9IDVQScZX/view?usp=sharing
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
 **Author:** Marimla, Allain Stephanie S.
 
