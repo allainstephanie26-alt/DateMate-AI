@@ -1,6 +1,7 @@
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'screens/ai_recommendation_screen.dart';
 import 'screens/bucket_list_screen.dart';
@@ -15,6 +16,17 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Light status/navigation icons over the dark romantic theme.
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: AppColors.backgroundDeep,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
 
   // Initialize local database.
   final localDatabase = LocalDatabase();
@@ -59,7 +71,11 @@ class DateMateApp extends StatelessWidget {
       // Device Preview support.
       locale: DevicePreview.locale(context),
 
-      builder: DevicePreview.appBuilder,
+      // The shared dark plum backdrop sits behind every (transparent) screen.
+      builder: (context, child) => DevicePreview.appBuilder(
+        context,
+        AppBackdrop(child: child ?? const SizedBox.shrink()),
+      ),
 
       home: RootShell(controller: controller),
     );

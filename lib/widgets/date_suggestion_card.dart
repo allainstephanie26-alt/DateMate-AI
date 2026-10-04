@@ -64,6 +64,8 @@ class _DateSuggestionCardState extends State<DateSuggestionCard> {
                       category: suggestion.category,
                       seedKey: suggestion.placeId,
                       assetPath: suggestion.imageUrl,
+                      aiIdea:
+                          suggestion.imageUrl.isEmpty && !suggestion.verified,
                       height: 208,
                       borderRadius: 0,
                     ),
@@ -75,8 +77,8 @@ class _DateSuggestionCardState extends State<DateSuggestionCard> {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withValues(alpha: .05),
-                              AppColors.primaryDark.withValues(alpha: .78),
+                              Colors.black.withValues(alpha: .08),
+                              AppColors.primaryDark.withValues(alpha: .90),
                             ],
                             stops: const [0.0, 0.45, 1.0],
                           ),
@@ -112,8 +114,12 @@ class _DateSuggestionCardState extends State<DateSuggestionCard> {
                       right: 10,
                       top: 10,
                       child: Material(
-                        color: Colors.white.withValues(alpha: .94),
-                        shape: const CircleBorder(),
+                        color: AppColors.primaryDark.withValues(alpha: .58),
+                        shape: CircleBorder(
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: .30),
+                          ),
+                        ),
                         child: InkWell(
                           onTap: widget.onFavorite,
                           customBorder: const CircleBorder(),
@@ -124,7 +130,9 @@ class _DateSuggestionCardState extends State<DateSuggestionCard> {
                                   ? Icons.favorite_rounded
                                   : Icons.favorite_border_rounded,
                               size: 20,
-                              color: AppColors.magenta,
+                              color: widget.isFavorite
+                                  ? AppColors.coral
+                                  : Colors.white,
                             ),
                           ),
                         ),
@@ -188,7 +196,7 @@ class _DateSuggestionCardState extends State<DateSuggestionCard> {
                             height: 5,
                             margin: const EdgeInsets.only(right: 7),
                             decoration: const BoxDecoration(
-                              color: AppColors.violet,
+                              color: AppColors.lavenderText,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -198,7 +206,7 @@ class _DateSuggestionCardState extends State<DateSuggestionCard> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: AppColors.violetDeep,
+                                color: AppColors.lavenderText,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                               ),

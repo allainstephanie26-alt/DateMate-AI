@@ -4,22 +4,19 @@ import 'package:flutter/material.dart';
 
 import '../data/catalog_data.dart';
 import '../theme.dart';
+import 'stock_photo.dart';
 
-/// A place "photo" card: a real local photo when one exists, and a
-/// designed illustrated hero — not a flat icon badge — when it doesn't.
+/// A place photo.
 ///
-/// This app makes no network image calls and uses no place-photo API (see
-/// `assets/places/README.md` for why). For the small set of verified real
-/// places, a real photo can be dropped in at `assets/places/<id>.jpg` and
-/// this widget picks it up automatically via [assetPath] — no other code
-/// changes needed. `Image.asset`'s own `errorBuilder` guarantees that a
-/// missing or corrupt file can never render as Flutter's broken-image
-/// icon: it falls straight through to the illustrated hero instead, so
-/// every card always renders something intentional.
-///
-/// The illustrated hero itself is built from layered, blurred gradient
-/// "aurora" shapes plus a glass icon medallion — designed to read as a
-/// branded editorial image, not a generic category icon.
+/// Three cases, in priority order:
+///  1. [assetPath] is set → the curated/verified place's own bundled photo
+///     (`assets/places/<id>.jpg`). This mapping is untouched.
+///  2. [aiIdea] is true (a generated "DateMate idea" with no bundled photo)
+///     → a real, free stock photograph chosen by category via [StockPhoto]
+///     (restaurant → food, café → coffee, outdoor → nature, cinema →
+///     entertainment, …). Never an icon, pin, gradient or colored box.
+///  3. Anything else (e.g. a manually typed bucket-list item) → the original
+///     illustrated hero, exactly as before.
 class PlaceImage extends StatelessWidget {
   const PlaceImage({
     super.key,
@@ -29,19 +26,21 @@ class PlaceImage extends StatelessWidget {
     this.assetPath = '',
     this.height = 180,
     this.borderRadius = 18,
+    this.aiIdea = false,
   });
 
   final String placeName;
   final String category;
   final String seedKey;
 
-  /// Local asset path to a real photo, e.g. `assets/places/hardin-angeles.jpg`.
-  /// Empty for every generated "DateMate idea" place, and for a verified
-  /// place whose photo hasn't been added yet.
+  /// Local asset path to a verified place's real photo.
   final String assetPath;
 
   final double height;
   final double borderRadius;
+
+  /// True for DateMate Idea / AI recommendations that have no bundled photo.
+  final bool aiIdea;
 
   IconData get _icon {
     final haystack = '$placeName $category'.toLowerCase();
@@ -63,41 +62,45 @@ class PlaceImage extends StatelessWidget {
     return AppColors.placeGradients[index];
   }
 
+  Widget _hero() =>
+      _IllustratedHero(icon: _icon, name: placeName, colors: _gradient());
+
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(borderRadius);
+
+    final Widget content;
+    if (assetPath.isNotEmpty) {
+      content = Image.asset(
+        assetPath,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => aiIdea
+            ? StockPhoto(
+                placeName: placeName,
+                category: category,
+                seedKey: seedKey,
+              )
+            : _hero(),
+      );
+    } else if (aiIdea) {
+      content = StockPhoto(
+        placeName: placeName,
+        category: category,
+        seedKey: seedKey,
+      );
+    } else {
+      content = _hero();
+    }
+
     return ClipRRect(
       borderRadius: radius,
-      child: SizedBox(
-        height: height,
-        width: double.infinity,
-        child: assetPath.isEmpty
-            ? _IllustratedHero(
-                icon: _icon,
-                name: placeName,
-                colors: _gradient(),
-              )
-            : Image.asset(
-                assetPath,
-                fit: BoxFit.cover,
-                // A missing/corrupt file can never show as a broken-image
-                // icon — it falls through to the same illustrated hero
-                // every generated place already uses.
-                errorBuilder: (_, __, ___) => _IllustratedHero(
-                  icon: _icon,
-                  name: placeName,
-                  colors: _gradient(),
-                ),
-              ),
-      ),
+      child: SizedBox(height: height, width: double.infinity, child: content),
     );
   }
 }
 
-/// The designed fallback hero: layered blurred "aurora" blobs over a
-/// 3-stop brand gradient, a soft diagonal sheen, and a glass medallion
-/// holding the category icon + the place's initial — composed to read as
-/// an intentional piece of art, not a placeholder.
+/// The original designed fallback hero (kept for non-AI items such as
+/// manually added bucket-list entries).
 class _IllustratedHero extends StatelessWidget {
   const _IllustratedHero({
     required this.icon,
@@ -125,7 +128,6 @@ class _IllustratedHero extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Blurred aurora blobs — the "blurred elements" layer.
           Positioned(
             left: -40,
             top: -50,
@@ -136,12 +138,6 @@ class _IllustratedHero extends StatelessWidget {
             bottom: -40,
             child: _blob(190, colors.first.withValues(alpha: .5)),
           ),
-          Positioned(
-            right: 10,
-            top: -20,
-            child: _blob(90, Colors.white.withValues(alpha: .22)),
-          ),
-          // Diagonal gloss sheen for a premium, polished finish.
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -149,27 +145,24 @@ class _IllustratedHero extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white.withValues(alpha: .14),
+                    Colors.white.withValues(alpha: .10),
                     Colors.transparent,
-                    Colors.black.withValues(alpha: .10),
+                    Colors.black.withValues(alpha: .22),
                   ],
                   stops: const [0.0, 0.45, 1.0],
                 ),
               ),
             ),
           ),
-          // Large watermark icon, low-opacity, for depth and category cue.
           Positioned(
             right: -6,
             bottom: -14,
             child: Icon(
               icon,
               size: 104,
-              color: Colors.white.withValues(alpha: .14),
+              color: Colors.white.withValues(alpha: .12),
             ),
           ),
-          // Glass medallion with the category icon + initial — the focal
-          // point, deliberately composed rather than a bare icon-on-color.
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -181,10 +174,10 @@ class _IllustratedHero extends StatelessWidget {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .22),
+                        color: Colors.white.withValues(alpha: .16),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: .55),
+                          color: Colors.white.withValues(alpha: .45),
                           width: 1.4,
                         ),
                       ),

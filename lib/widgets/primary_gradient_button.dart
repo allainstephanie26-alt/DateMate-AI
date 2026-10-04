@@ -43,15 +43,18 @@ class _PrimaryGradientButtonState extends State<PrimaryGradientButton> {
       curve: Curves.easeOut,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 150),
-        opacity: enabled ? 1 : .45,
+        opacity: enabled ? 1 : .6,
         child: Container(
           decoration: BoxDecoration(
             gradient: enabled
                 ? AppColors.buttonGradient
                 : const LinearGradient(
-                    colors: [AppColors.muted, AppColors.muted],
+                    colors: [Color(0xFF4A3558), Color(0xFF3A2B47)],
                   ),
             borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: enabled ? .22 : .08),
+            ),
             boxShadow: enabled ? AppShadows.glow : null,
           ),
           child: Material(

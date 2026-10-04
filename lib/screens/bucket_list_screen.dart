@@ -157,7 +157,7 @@ class _BucketListScreenState extends State<BucketListScreen> {
         ? all.where((i) => i.status == BucketListStatus.done).toList()
         : all;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -170,48 +170,63 @@ class _BucketListScreenState extends State<BucketListScreen> {
                     subtitle:
                         '${all.length} saved · keep your best date ideas together',
                     onBack: () => widget.onNavTap(0),
-                    trailing: IconButton(
-                      onPressed: _addItem,
+                    trailing: AppIconButton(
+                      icon: Icons.add_rounded,
+                      iconSize: 22,
                       tooltip: 'Add date',
-                      icon: const CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppColors.gradientEnd,
-                        child: Icon(Icons.add, color: Colors.white),
-                      ),
+                      filled: true,
+                      onTap: _addItem,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.blush,
+                      color: Colors.white.withValues(alpha: .05),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: .10),
+                      ),
                     ),
                     child: Row(
                       children: ['All', 'Pending', 'Completed']
                           .map(
                             (tab) => Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => filter = tab),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 9,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: filter == tab
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    tab,
-                                    style: TextStyle(
-                                      color: filter == tab
-                                          ? AppColors.gradientEnd
-                                          : AppColors.onSurfaceVariant,
-                                      fontWeight: FontWeight.bold,
+                              child: Semantics(
+                                button: true,
+                                selected: filter == tab,
+                                label: tab,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => filter = tab),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: filter == tab
+                                          ? AppColors.buttonGradient
+                                          : null,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: filter == tab
+                                          ? const [
+                                              BoxShadow(
+                                                color: Color(0x4DE6367F),
+                                                blurRadius: 12,
+                                                offset: Offset(0, 4),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      tab,
+                                      style: TextStyle(
+                                        color: filter == tab
+                                            ? Colors.white
+                                            : AppColors.muted,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
                                   ),
                                 ),

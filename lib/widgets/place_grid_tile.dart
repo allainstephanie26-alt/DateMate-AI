@@ -35,7 +35,7 @@ class _PlaceGridTileState extends State<PlaceGridTile> {
       scale: _pressed ? .97 : 1,
       duration: const Duration(milliseconds: 110),
       child: Material(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.medium),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -45,8 +45,10 @@ class _PlaceGridTileState extends State<PlaceGridTile> {
           onTapCancel: () => setState(() => _pressed = false),
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.outline),
+              gradient: AppColors.cardGradient,
+              border: Border.all(color: Colors.white.withValues(alpha: .09)),
               borderRadius: BorderRadius.circular(AppRadius.medium),
+              boxShadow: AppShadows.soft,
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -59,6 +61,8 @@ class _PlaceGridTileState extends State<PlaceGridTile> {
                       category: suggestion.category,
                       seedKey: suggestion.placeId,
                       assetPath: suggestion.imageUrl,
+                      aiIdea:
+                          suggestion.imageUrl.isEmpty && !suggestion.verified,
                       height: 100,
                       borderRadius: 0,
                     ),
@@ -68,8 +72,12 @@ class _PlaceGridTileState extends State<PlaceGridTile> {
                       child: Material(
                         color: widget.isSaved
                             ? Colors.transparent
-                            : Colors.white.withValues(alpha: .94),
-                        shape: const CircleBorder(),
+                            : AppColors.primaryDark.withValues(alpha: .62),
+                        shape: CircleBorder(
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: .35),
+                          ),
+                        ),
                         child: InkWell(
                           onTap: widget.onSave,
                           customBorder: const CircleBorder(),
@@ -88,7 +96,7 @@ class _PlaceGridTileState extends State<PlaceGridTile> {
                               size: 15,
                               color: widget.isSaved
                                   ? Colors.white
-                                  : AppColors.magenta,
+                                  : AppColors.pinkText,
                             ),
                           ),
                         ),
@@ -164,7 +172,7 @@ class _PlaceGridTileState extends State<PlaceGridTile> {
                         style: const TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.magentaDeep,
+                          color: AppColors.pinkText,
                         ),
                       ),
                     ],

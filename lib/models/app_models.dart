@@ -17,14 +17,15 @@ class UserModel {
     required this.createdAt,
   });
 
-  UserModel copyWith({String? coupleId, String? name}) => UserModel(
-    id: id,
-    email: email,
-    name: name ?? this.name,
-    passwordHash: passwordHash,
-    coupleId: coupleId ?? this.coupleId,
-    createdAt: createdAt,
-  );
+  UserModel copyWith({String? coupleId, String? name, String? passwordHash}) =>
+      UserModel(
+        id: id,
+        email: email,
+        name: name ?? this.name,
+        passwordHash: passwordHash ?? this.passwordHash,
+        coupleId: coupleId ?? this.coupleId,
+        createdAt: createdAt,
+      );
 
   Map<String, dynamic> toMap() => {
     'id': id,

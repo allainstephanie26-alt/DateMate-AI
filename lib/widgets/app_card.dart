@@ -27,13 +27,15 @@ class AppCard extends StatelessWidget {
       );
     }
 
+    // Layered dark card: plum gradient fill, a faint light edge and a soft
+    // magenta under-glow so cards float above the page backdrop.
     return Container(
       margin: margin,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        gradient: AppColors.cardGradient,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.outline.withOpacity(0.8)),
+        border: Border.all(color: Colors.white.withValues(alpha: .08)),
         boxShadow: AppShadows.card,
       ),
       child: child,
@@ -64,7 +66,7 @@ class AppBadge extends StatelessWidget {
           Icon(
             icon,
             size: 13,
-            color: (strong || gradient) ? Colors.white : AppColors.magenta,
+            color: (strong || gradient) ? Colors.white : AppColors.pinkText,
           ),
           const SizedBox(width: 5),
         ],
@@ -91,12 +93,21 @@ class AppBadge extends StatelessWidget {
                 end: Alignment.centerRight,
               )
             : null,
-        color: gradient ? null : (strong ? AppColors.primary : AppColors.blush),
+        color: gradient
+            ? null
+            : (strong
+                  ? AppColors.primaryDark.withValues(alpha: .72)
+                  : AppColors.blush),
         borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: gradient
+            ? null
+            : Border.all(
+                color: Colors.white.withValues(alpha: strong ? .22 : .08),
+              ),
         boxShadow: gradient
             ? [
                 const BoxShadow(
-                  color: Color(0x33C21E6B),
+                  color: Color(0x55E6367F),
                   blurRadius: 10,
                   offset: Offset(0, 4),
                 ),

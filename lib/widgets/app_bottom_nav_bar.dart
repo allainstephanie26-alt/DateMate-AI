@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// A floating, frosted-glass nav bar — the active tab is filled with the
-/// brand gradient (an "active state" highlight) instead of a flat tint, so
-/// it reads as the one place on screen you're always oriented by.
+/// A floating, frosted dark-glass nav bar. The active tab is a glowing
+/// gradient pill so it's the one place on screen that always orients you.
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({
     super.key,
@@ -32,10 +31,12 @@ class AppBottomNavBar extends StatelessWidget {
         ),
         child: GlassLayer(
           borderRadius: 28,
-          blur: 22,
-          opacity: .82,
+          blur: 24,
+          tint: const Color(0xFF1C1028),
+          opacity: .86,
+          borderOpacity: .14,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(7, 7, 7, 7),
+            padding: const EdgeInsets.all(7),
             child: Row(
               children: List.generate(items.length, (i) {
                 final item = items[i];
@@ -49,17 +50,22 @@ class AppBottomNavBar extends StatelessWidget {
                       onTap: () => onTap(i),
                       borderRadius: BorderRadius.circular(20),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
+                        duration: const Duration(milliseconds: 240),
                         curve: Curves.easeOut,
                         padding: const EdgeInsets.symmetric(vertical: 9),
                         decoration: BoxDecoration(
                           gradient: active ? AppColors.buttonGradient : null,
                           borderRadius: BorderRadius.circular(20),
+                          border: active
+                              ? Border.all(
+                                  color: Colors.white.withValues(alpha: .22),
+                                )
+                              : null,
                           boxShadow: active
                               ? const [
                                   BoxShadow(
-                                    color: Color(0x3DE6367F),
-                                    blurRadius: 14,
+                                    color: Color(0x66E6367F),
+                                    blurRadius: 16,
                                     offset: Offset(0, 5),
                                   ),
                                 ]

@@ -24,8 +24,9 @@ class AppPageHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (onBack != null) ...[
-              _HeaderIconButton(
+              AppIconButton(
                 icon: Icons.arrow_back_ios_new_rounded,
+                tooltip: 'Back',
                 onTap: onBack!,
               ),
               const SizedBox(width: 13),
@@ -61,25 +62,95 @@ class AppPageHeader extends StatelessWidget {
   }
 }
 
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({required this.icon, required this.onTap});
+/// The app's round "glass" icon button — used for back, close, next,
+/// continue and other single-icon controls so they all share one look:
+/// dark translucent fill, hairline light border and a soft pink glow ring
+/// while pressed.
+class AppIconButton extends StatefulWidget {
+  const AppIconButton({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+    this.size = 44,
+    this.iconSize = 17,
+    this.filled = false,
+  });
+
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final String? tooltip;
+  final double size;
+  final double iconSize;
+
+  /// When true the button uses the brand gradient (for "next / continue").
+  final bool filled;
+
+  @override
+  State<AppIconButton> createState() => _AppIconButtonState();
+}
+
+class _AppIconButtonState extends State<AppIconButton> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.blush,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(icon, size: 17, color: AppColors.magentaDeep),
+    final enabled = widget.onTap != null;
+    final radius = BorderRadius.circular(widget.size * .36);
+    final button = AnimatedScale(
+      scale: _pressed ? .92 : 1,
+      duration: const Duration(milliseconds: 100),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 150),
+        opacity: enabled ? 1 : .4,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: widget.filled ? AppColors.buttonGradient : null,
+            color: widget.filled ? null : Colors.white.withValues(alpha: .07),
+            borderRadius: radius,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: widget.filled ? .25 : .13),
+            ),
+            boxShadow: _pressed || widget.filled
+                ? const [
+                    BoxShadow(
+                      color: Color(0x40E6367F),
+                      blurRadius: 14,
+                      offset: Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: radius,
+            child: InkWell(
+              onTap: widget.onTap,
+              onTapDown: (_) => setState(() => _pressed = true),
+              onTapUp: (_) => setState(() => _pressed = false),
+              onTapCancel: () => setState(() => _pressed = false),
+              borderRadius: radius,
+              child: SizedBox(
+                width: widget.size,
+                height: widget.size,
+                child: Icon(
+                  widget.icon,
+                  size: widget.iconSize,
+                  color: widget.filled ? Colors.white : AppColors.pinkText,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
+    );
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: widget.tooltip,
+      child: widget.tooltip == null
+          ? button
+          : Tooltip(message: widget.tooltip!, child: button),
     );
   }
 }

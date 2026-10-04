@@ -6,6 +6,7 @@ import '../widgets/primary_gradient_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.controller, this.onLoggedIn});
+
   final AppController controller;
   final VoidCallback? onLoggedIn;
 
@@ -17,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool signUpMode = false;
   bool obscure = true;
   bool remember = true;
+
   final name = TextEditingController();
   final email = TextEditingController();
   final password = TextEditingController();
@@ -33,10 +35,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> submit() async {
     FocusScope.of(context).unfocus();
+
     if (signUpMode && password.text != confirm.text) {
       _message('Passwords do not match.');
       return;
     }
+
     final ok = signUpMode
         ? await widget.controller.signUp(
             name: name.text,
@@ -48,75 +52,95 @@ class _LoginScreenState extends State<LoginScreen> {
             password.text,
             remember: remember,
           );
+
     if (!mounted) return;
+
     if (!ok) {
       _message(widget.controller.errorMessage ?? 'Something went wrong.');
       return;
     }
+
     if (signUpMode && widget.controller.cloud.enabled) {
       _message('Account created. Check your email to verify your account.');
     }
+
     widget.onLoggedIn?.call();
   }
 
+  // FIXED: Matches AppController.resetPassword(String email)
   Future<void> _forgotPassword() async {
-    final controller = TextEditingController(text: email.text.trim());
+    final emailController = TextEditingController(text: email.text.trim());
+
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Reset password'),
         content: TextField(
-          controller: controller,
+          controller: emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
             labelText: 'Email address',
-            prefixIcon: Icon(Icons.mail_outline),
+            prefixIcon: Icon(Icons.mail_outline_rounded),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
+            onPressed: () {
+              Navigator.pop(dialogContext, false);
+            },
             child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () async {
-              final ok = await widget.controller.resetPassword(controller.text);
-              if (dialogContext.mounted) Navigator.pop(dialogContext, ok);
+              final ok = await widget.controller.resetPassword(
+                emailController.text,
+              );
+
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext, ok);
+              }
             },
-            child: const Text('Send reset email'),
+            child: const Text('Send reset link'),
           ),
         ],
       ),
     );
-    controller.dispose();
+
+    emailController.dispose();
+
     if (!mounted) return;
-    if (result == true)
-      _message('Password reset email sent. Check your inbox.');
-    else if (widget.controller.errorMessage != null)
+
+    if (result == true) {
+      _message('Password reset link sent. Please check your email.');
+    } else if (widget.controller.errorMessage != null) {
       _message(widget.controller.errorMessage!);
+    }
   }
 
-  void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
-  );
+  void _message(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Stack(
           children: [
             Positioned(
               top: -90,
               right: -70,
-              child: _decorOrb(190, AppColors.rose.withValues(alpha: .20)),
+              child: _decorOrb(190, AppColors.rose.withOpacity(0.14)),
             ),
             Positioned(
               top: 210,
               left: -95,
-              child: _decorOrb(180, AppColors.peach.withValues(alpha: .25)),
+              child: _decorOrb(180, AppColors.violet.withOpacity(0.16)),
             ),
             Center(
               child: SingleChildScrollView(
@@ -131,7 +155,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: BoxDecoration(
                           gradient: AppColors.buttonGradient,
                           borderRadius: BorderRadius.circular(24),
-                          boxShadow: AppShadows.card,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.25),
+                          ),
+                          boxShadow: AppShadows.glow,
                         ),
                         child: const Icon(
                           Icons.favorite_rounded,
@@ -139,7 +166,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 34,
                         ),
                       ),
+
                       const SizedBox(height: 13),
+
                       const Text(
                         'DateMate AI',
                         style: TextStyle(
@@ -149,7 +178,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppColors.primary,
                         ),
                       ),
+
                       const SizedBox(height: 4),
+
                       const Text(
                         'Less deciding. More dating.',
                         style: TextStyle(
@@ -157,12 +188,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontSize: 12.5,
                         ),
                       ),
+
                       const SizedBox(height: 20),
+
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppColors.blush,
+                          color: Colors.white.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.10),
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -171,13 +207,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
+
                       const SizedBox(height: 14),
+
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          gradient: AppColors.cardGradient,
                           borderRadius: BorderRadius.circular(26),
-                          border: Border.all(color: AppColors.outline),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.10),
+                          ),
                           boxShadow: AppShadows.card,
                         ),
                         child: Column(
@@ -189,17 +229,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : 'Welcome back',
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
+
                             const SizedBox(height: 4),
+
                             Text(
                               signUpMode
                                   ? 'Start with your name and email. You can personalize your date preferences next.'
                                   : 'Sign in to continue planning your next date.',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
+
                             const SizedBox(height: 18),
+
                             if (signUpMode) ...[
                               _label('Name'),
                               const SizedBox(height: 6),
+
                               TextField(
                                 controller: name,
                                 textInputAction: TextInputAction.next,
@@ -210,10 +255,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hintText: 'Your name',
                                 ),
                               ),
+
                               const SizedBox(height: 12),
                             ],
+
                             _label('Email'),
                             const SizedBox(height: 6),
+
                             TextField(
                               controller: email,
                               keyboardType: TextInputType.emailAddress,
@@ -223,9 +271,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 hintText: 'you@example.com',
                               ),
                             ),
+
                             const SizedBox(height: 12),
+
                             _label('Password'),
                             const SizedBox(height: 6),
+
                             TextField(
                               controller: password,
                               obscureText: obscure,
@@ -241,8 +292,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? 'At least 6 characters'
                                     : 'Your password',
                                 suffixIcon: IconButton(
-                                  onPressed: () =>
-                                      setState(() => obscure = !obscure),
+                                  onPressed: () {
+                                    setState(() {
+                                      obscure = !obscure;
+                                    });
+                                  },
                                   icon: Icon(
                                     obscure
                                         ? Icons.visibility_outlined
@@ -251,10 +305,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
+
                             if (signUpMode) ...[
                               const SizedBox(height: 12),
+
                               _label('Confirm password'),
                               const SizedBox(height: 6),
+
                               TextField(
                                 controller: confirm,
                                 obscureText: obscure,
@@ -264,8 +321,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ],
+
                             if (!signUpMode) ...[
                               const SizedBox(height: 5),
+
                               Row(
                                 children: [
                                   SizedBox(
@@ -273,11 +332,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                     height: 32,
                                     child: Checkbox(
                                       value: remember,
-                                      onChanged: (v) =>
-                                          setState(() => remember = v ?? true),
+                                      onChanged: (v) {
+                                        setState(() {
+                                          remember = v ?? true;
+                                        });
+                                      },
                                       activeColor: AppColors.gradientEnd,
                                     ),
                                   ),
+
                                   const Expanded(
                                     child: Text(
                                       'Remember me',
@@ -287,6 +350,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                   ),
+
                                   TextButton(
                                     onPressed: _forgotPassword,
                                     child: const Text('Forgot password?'),
@@ -294,7 +358,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ],
                               ),
                             ],
+
                             const SizedBox(height: 10),
+
                             PrimaryGradientButton(
                               label: signUpMode
                                   ? 'Create my account'
@@ -305,11 +371,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               loading: c.busy,
                               onPressed: c.busy ? null : submit,
                             ),
+
                             const SizedBox(height: 13),
+
                             Center(
                               child: TextButton(
-                                onPressed: () =>
-                                    setState(() => signUpMode = !signUpMode),
+                                onPressed: () {
+                                  setState(() {
+                                    signUpMode = !signUpMode;
+                                  });
+                                },
                                 child: Text(
                                   signUpMode
                                       ? 'Already have an account? Log in'
@@ -320,7 +391,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
+
                       const SizedBox(height: 13),
+
                       Center(
                         child: Text(
                           'Your account data is stored securely for your DateMate session.',
@@ -342,15 +415,19 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _modeButton(String label, bool selected) {
     return Expanded(
       child: InkWell(
-        onTap: () => setState(() => signUpMode = label != 'Log in'),
+        onTap: () {
+          setState(() {
+            signUpMode = label != 'Log in';
+          });
+        },
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.transparent,
+            gradient: selected ? AppColors.buttonGradient : null,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: selected ? AppShadows.soft : null,
+            boxShadow: selected ? AppShadows.glow : null,
           ),
           alignment: Alignment.center,
           child: Text(
@@ -358,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen> {
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w800,
-              color: selected ? AppColors.primary : AppColors.muted,
+              color: selected ? Colors.white : AppColors.muted,
             ),
           ),
         ),
@@ -366,17 +443,22 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _label(String value) => Text(
-    value,
-    style: const TextStyle(
-      fontSize: 11.5,
-      fontWeight: FontWeight.w800,
-      color: AppColors.primary,
-    ),
-  );
-  Widget _decorOrb(double size, Color color) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-  );
+  Widget _label(String value) {
+    return Text(
+      value,
+      style: const TextStyle(
+        fontSize: 11.5,
+        fontWeight: FontWeight.w800,
+        color: AppColors.primary,
+      ),
+    );
+  }
+
+  Widget _decorOrb(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
 }

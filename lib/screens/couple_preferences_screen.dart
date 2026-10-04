@@ -342,7 +342,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
     final couple = c.couple;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -610,8 +610,8 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
       decoration: BoxDecoration(
         gradient: AppColors.softGradient,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.outline),
-        boxShadow: AppShadows.soft,
+        border: Border.all(color: Colors.white.withValues(alpha: .10)),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,8 +622,9 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  gradient: AppColors.buttonGradient,
                   borderRadius: BorderRadius.circular(14),
+                  boxShadow: AppShadows.glow,
                 ),
                 child: const Icon(
                   Icons.people_alt_rounded,
@@ -781,8 +782,10 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
       onPressed: onTap,
       tooltip: tooltip,
       style: IconButton.styleFrom(
-        backgroundColor: AppColors.blush,
-        foregroundColor: AppColors.primary,
+        backgroundColor: Colors.white.withValues(alpha: .07),
+        foregroundColor: AppColors.pinkText,
+        disabledForegroundColor: AppColors.muted.withValues(alpha: .4),
+        side: BorderSide(color: Colors.white.withValues(alpha: .13)),
       ),
       icon: Icon(icon, size: 18),
     );

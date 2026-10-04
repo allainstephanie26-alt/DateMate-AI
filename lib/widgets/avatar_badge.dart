@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// A couple-member avatar: a flat-color initial circle with a thin white
-/// ring, so two overlapping avatars (you + partner) stay visually
+/// A couple-member avatar: an initial circle with a thin light ring, so two overlapping avatars (you + partner) stay visually
 /// separated on any background.
 class AvatarBadge extends StatelessWidget {
   final String initial;
@@ -21,7 +20,10 @@ class AvatarBadge extends StatelessWidget {
     decoration: BoxDecoration(
       color: backgroundColor,
       shape: BoxShape.circle,
-      border: Border.all(color: Colors.white, width: 2),
+      border: Border.all(
+        color: Colors.white.withValues(alpha: .28),
+        width: 1.6,
+      ),
       boxShadow: [
         BoxShadow(
           color: backgroundColor.withValues(alpha: .35),

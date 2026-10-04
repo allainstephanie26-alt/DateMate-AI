@@ -144,7 +144,7 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
     final c = widget.controller;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -164,12 +164,16 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: AppColors.blush,
+                            gradient: AppColors.chipGradient,
                             borderRadius: BorderRadius.circular(13),
+                            border: Border.all(
+                              color: AppColors.pinkText.withValues(alpha: .28),
+                            ),
+                            boxShadow: AppShadows.glow,
                           ),
                           child: const Icon(
                             Icons.auto_awesome_rounded,
-                            color: AppColors.gradientEnd,
+                            color: AppColors.pinkText,
                             size: 20,
                           ),
                         ),
@@ -179,9 +183,12 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(15),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: AppColors.outline),
+                          gradient: AppColors.cardGradient,
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: .09),
+                          ),
+                          boxShadow: AppShadows.card,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,9 +432,17 @@ class _PlaceDetailsSheet extends StatelessWidget {
     return SafeArea(
       child: Container(
         height: MediaQuery.sizeOf(context).height * .92,
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF241633), Color(0xFF120A1B)],
+          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: .14)),
+          ),
+          boxShadow: AppShadows.floating,
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(18, 10, 18, 28),
@@ -439,7 +454,7 @@ class _PlaceDetailsSheet extends StatelessWidget {
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.outline,
+                    color: Colors.white.withValues(alpha: .22),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -454,6 +469,8 @@ class _PlaceDetailsSheet extends StatelessWidget {
                       category: suggestion.category,
                       seedKey: suggestion.placeId,
                       assetPath: suggestion.imageUrl,
+                      aiIdea:
+                          suggestion.imageUrl.isEmpty && !suggestion.verified,
                       height: 205,
                       borderRadius: 0,
                     ),
@@ -465,10 +482,21 @@ class _PlaceDetailsSheet extends StatelessWidget {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              AppColors.primary.withValues(alpha: .82),
+                              AppColors.primaryDark.withValues(alpha: .92),
                             ],
                           ),
                         ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: AppIconButton(
+                        icon: Icons.close_rounded,
+                        iconSize: 19,
+                        size: 40,
+                        tooltip: 'Close',
+                        onTap: () => Navigator.pop(context),
                       ),
                     ),
                     Positioned(
@@ -563,8 +591,13 @@ class _PlaceDetailsSheet extends StatelessWidget {
                                 vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: .9),
+                                color: AppColors.primaryDark.withValues(
+                                  alpha: .72,
+                                ),
                                 borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: .16),
+                                ),
                               ),
                               child: const Text(
                                 'Location preview',
@@ -679,6 +712,7 @@ class _PlaceDetailsSheet extends StatelessWidget {
     decoration: BoxDecoration(
       color: AppColors.blush,
       borderRadius: BorderRadius.circular(11),
+      border: Border.all(color: AppColors.pinkText.withValues(alpha: .18)),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -705,12 +739,12 @@ class _PlaceDetailsSheet extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: Colors.white,
+      gradient: AppColors.cardGradient,
       borderRadius: BorderRadius.circular(19),
-      border: Border.all(color: AppColors.outline),
+      border: Border.all(color: Colors.white.withValues(alpha: .09)),
       boxShadow: const [
         BoxShadow(
-          color: Color(0x0C000000),
+          color: Color(0x4D000000),
           blurRadius: 14,
           offset: Offset(0, 5),
         ),

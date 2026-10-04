@@ -3,8 +3,19 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// DateMate AI design tokens — v4 "premium romantic" redesign.
+/// DateMate AI design tokens — v5 "dark romantic" theme.
+///
+/// Token NAMES are unchanged from v4 so every screen keeps compiling; only
+/// their values moved to a deep plum / dark violet / near-black palette with
+/// pink, coral, magenta, lavender and purple accents.
+///
+/// Reading guide:
+///  * [primary] is the main TEXT/title colour (a soft near-white blush) —
+///    it is no longer a fill colour. Fills use [magentaDeep] / gradients.
+///  * [blush] / [blushDeep] / [lavenderSoft] are now dark tinted tiles used
+///    behind small icons and chips.
 class AppColors {
+  // ── Accent family (unchanged hues, tuned to sit on dark surfaces) ──────
   static const coral = Color(0xFFFF7A8A);
   static const coralDeep = Color(0xFFFF5B7A);
   static const magenta = Color(0xFFE6367F);
@@ -12,35 +23,48 @@ class AppColors {
   static const violet = Color(0xFF8B5CF6);
   static const violetDeep = Color(0xFF6D3FD1);
   static const lavender = Color(0xFFD7C3F7);
-  static const lavenderSoft = Color(0xFFEDE1FB);
+  static const lavenderSoft = Color(0xFF2A1A44);
 
-  static const primary = magentaDeep;
-  static const primaryDark = Color(0xFF3B1240);
+  // Readable accent tints for TEXT on dark surfaces.
+  static const pinkText = Color(0xFFFF8FB1);
+  static const lavenderText = Color(0xFFC9B3F5);
+
+  // ── Text ──────────────────────────────────────────────────────────────
+  static const primary = Color(0xFFF8EEFB); // titles / strong text
+  static const primaryDark = Color(0xFF12081A); // deepest plum (overlays)
+  static const onSurface = Color(0xFFF3E8F7);
+  static const ink = onSurface;
+  static const muted = Color(0xFFB9A5C6);
+  static const onSurfaceVariant = muted;
+
+  // ── Accents used as fills ─────────────────────────────────────────────
   static const gradientEnd = magenta;
   static const secondary = violet;
   static const rose = coral;
-  static const blush = Color(0xFFFBEAF2);
-  static const blushDeep = Color(0xFFF5D8E8);
-  static const peach = Color(0xFFFFD3B6);
+  static const peach = Color(0xFFFFB690);
   static const tertiary = peach;
-  static const gold = Color(0xFFE8A639);
+  static const gold = Color(0xFFF0B24A);
 
-  static const background = Color(0xFFFCF7FD);
-  static const surface = Colors.white;
-  static const card = Colors.white;
-  static const onSurface = Color(0xFF2B1130);
-  static const ink = onSurface;
-  static const muted = Color(0xFF8D7693);
-  static const onSurfaceVariant = muted;
-  static const outline = Color(0xFFF0DFF0);
-  static const outlineSoft = Color(0xFFF6ECF8);
+  // ── Surfaces ──────────────────────────────────────────────────────────
+  static const backgroundDeep = Color(0xFF08050D);
+  static const background = Color(0xFF0E0914);
+  static const surface = Color(0xFF1A1124);
+  static const surfaceHigh = Color(0xFF241632);
+  static const surfaceTop = Color(0xFF2C1A3C);
+  static const card = surface;
+  static const blush = Color(0xFF2E1A3B);
+  static const blushDeep = Color(0xFF45244F);
+  static const outline = Color(0xFF3A2849);
+  static const outlineSoft = Color(0xFF2A1B38);
+  static const darkSurface = Color(0xFF12081A);
 
-  static const success = Color(0xFF3F9A63);
-  static const successBg = Color(0xFFE7F5EB);
-  static const error = Color(0xFFD23A5E);
-  static const warning = Color(0xFFB77A35);
-  static const darkSurface = Color(0xFF3B1240);
+  // ── Status ────────────────────────────────────────────────────────────
+  static const success = Color(0xFF5BC98A);
+  static const successBg = Color(0xFF16301F);
+  static const error = Color(0xFFFF6B8B);
+  static const warning = Color(0xFFE0A15A);
 
+  // ── Gradients ─────────────────────────────────────────────────────────
   static const buttonGradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
@@ -50,13 +74,20 @@ class AppColors {
   static const heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [coral, magentaDeep, Color(0xFF4A1766)],
+    colors: [Color(0xFFD9476F), Color(0xFF8E1F63), Color(0xFF2A1048)],
   );
 
+  /// Layered card fill: a barely-lit violet top edge fading into plum.
   static const softGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFFF1F4), Color(0xFFFBF3FE)],
+    colors: [Color(0xFF2B1737), Color(0xFF1B1228)],
+  );
+
+  static const cardGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF241633), Color(0xFF181022)],
   );
 
   static const glowGradient = RadialGradient(
@@ -66,26 +97,26 @@ class AppColors {
   static const shimmer = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFF8E0EC), Color(0xFFFCEFF8), Color(0xFFF8E0EC)],
+    colors: [Color(0xFF241633), Color(0xFF331E45), Color(0xFF241633)],
   );
 
   static const chipGradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    colors: [Color(0xFFFFE3EA), Color(0xFFF2E4FC)],
+    colors: [Color(0xFF3A1C3F), Color(0xFF2A1A4A)],
   );
 
   static const placeGradients = <List<Color>>[
-    [Color(0xFFFF9A8B), Color(0xFFE6367F), Color(0xFF6D3FD1)],
-    [Color(0xFFFFC371), Color(0xFFFF5B7A), Color(0xFF8B5CF6)],
-    [Color(0xFF8FD3C9), Color(0xFF6D83F2), Color(0xFF8B5CF6)],
-    [Color(0xFFFFB6C9), Color(0xFFC94B9A), Color(0xFF5B2C8A)],
-    [Color(0xFFFFD36E), Color(0xFFEF6C9B), Color(0xFF7A4FD1)],
-    [Color(0xFF9BE8D8), Color(0xFF5FB8E8), Color(0xFF7C5CE0)],
-    [Color(0xFFFFA3A3), Color(0xFFE6367F), Color(0xFF4A1766)],
-    [Color(0xFFB8A2FF), Color(0xFF8B5CF6), Color(0xFF4F2FA8)],
-    [Color(0xFFFFCE9E), Color(0xFFFF6F91), Color(0xFF6D3FD1)],
-    [Color(0xFF9FD8FF), Color(0xFFA78BFA), Color(0xFFE6367F)],
+    [Color(0xFFB8506A), Color(0xFF8E1F63), Color(0xFF3A1A6A)],
+    [Color(0xFFB8744A), Color(0xFFB03A5A), Color(0xFF4F2A8A)],
+    [Color(0xFF3F8F86), Color(0xFF4A58B0), Color(0xFF4F2A8A)],
+    [Color(0xFFB0506E), Color(0xFF8A3A78), Color(0xFF3A1D5E)],
+    [Color(0xFFB89040), Color(0xFFA84A78), Color(0xFF4F3290)],
+    [Color(0xFF3F9A88), Color(0xFF3F7FA8), Color(0xFF4A3A9A)],
+    [Color(0xFFB04A5A), Color(0xFF8E1F63), Color(0xFF2A1048)],
+    [Color(0xFF6A56B8), Color(0xFF5A3AB0), Color(0xFF2F1D6A)],
+    [Color(0xFFB87A58), Color(0xFFB03A62), Color(0xFF4A2A8A)],
+    [Color(0xFF5A86B8), Color(0xFF6A56B8), Color(0xFF8E1F63)],
   ];
 }
 
@@ -107,33 +138,36 @@ class AppSpacing {
 
 class AppShadows {
   static const card = <BoxShadow>[
-    BoxShadow(color: Color(0x14C21E6B), blurRadius: 26, offset: Offset(0, 10)),
-    BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x66000000), blurRadius: 26, offset: Offset(0, 12)),
+    BoxShadow(color: Color(0x14E6367F), blurRadius: 30, offset: Offset(0, 4)),
   ];
 
   static const soft = <BoxShadow>[
-    BoxShadow(color: Color(0x1AC21E6B), blurRadius: 16, offset: Offset(0, 6)),
+    BoxShadow(color: Color(0x4D000000), blurRadius: 16, offset: Offset(0, 6)),
   ];
 
   static const floating = <BoxShadow>[
-    BoxShadow(color: Color(0x33C21E6B), blurRadius: 32, offset: Offset(0, 16)),
+    BoxShadow(color: Color(0x99000000), blurRadius: 32, offset: Offset(0, 14)),
+    BoxShadow(color: Color(0x1F8B5CF6), blurRadius: 36, offset: Offset(0, 0)),
   ];
 
   static const glow = <BoxShadow>[
-    BoxShadow(color: Color(0x40E6367F), blurRadius: 22, offset: Offset(0, 10)),
-    BoxShadow(color: Color(0x308B5CF6), blurRadius: 10, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x4DE6367F), blurRadius: 22, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x388B5CF6), blurRadius: 12, offset: Offset(0, 2)),
   ];
 }
 
+/// Frosted dark glass: a translucent plum tint over a blurred backdrop with
+/// a hairline light border.
 class GlassLayer extends StatelessWidget {
   const GlassLayer({
     super.key,
     required this.child,
     this.borderRadius = AppRadius.card,
     this.blur = 18,
-    this.tint = Colors.white,
-    this.opacity = .72,
-    this.borderOpacity = .55,
+    this.tint = const Color(0xFF2A1838),
+    this.opacity = .62,
+    this.borderOpacity = .12,
   });
 
   final Widget child;
@@ -164,24 +198,93 @@ class GlassLayer extends StatelessWidget {
   }
 }
 
-final _baseTextTheme = GoogleFonts.urbanistTextTheme();
+/// App-wide page background: near-black plum with soft magenta / violet
+/// light pools. Screens use transparent Scaffolds so this shows through.
+class AppBackdrop extends StatelessWidget {
+  const AppBackdrop({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF160C20),
+                AppColors.background,
+                AppColors.backgroundDeep,
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          top: -140,
+          right: -120,
+          child: _pool(380, const Color(0xFFE6367F), .17),
+        ),
+        Positioned(
+          top: 260,
+          left: -190,
+          child: _pool(380, const Color(0xFF8B5CF6), .13),
+        ),
+        Positioned(
+          bottom: -170,
+          right: -130,
+          child: _pool(340, const Color(0xFFFF7A8A), .08),
+        ),
+        child,
+      ],
+    );
+  }
+
+  static Widget _pool(double size, Color color, double alpha) => IgnorePointer(
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
+        ),
+      ),
+    ),
+  );
+}
+
+final _baseTextTheme = GoogleFonts.urbanistTextTheme(
+  ThemeData(brightness: Brightness.dark).textTheme,
+);
 
 final appTheme = ThemeData(
   useMaterial3: true,
+  brightness: Brightness.dark,
   scaffoldBackgroundColor: AppColors.background,
+  canvasColor: AppColors.surface,
   fontFamily: GoogleFonts.urbanist().fontFamily,
   visualDensity: VisualDensity.standard,
   splashFactory: InkRipple.splashFactory,
 
-  colorScheme: ColorScheme.fromSeed(seedColor: AppColors.magenta).copyWith(
-    primary: AppColors.primary,
+  colorScheme: const ColorScheme.dark(
+    primary: AppColors.magenta,
+    onPrimary: Colors.white,
     secondary: AppColors.violet,
+    onSecondary: Colors.white,
     tertiary: AppColors.coral,
     surface: AppColors.surface,
-    onSurface: AppColors.ink,
+    onSurface: AppColors.onSurface,
+    onSurfaceVariant: AppColors.muted,
     error: AppColors.error,
     outline: AppColors.outline,
+    outlineVariant: AppColors.outlineSoft,
+    surfaceContainerHighest: AppColors.surfaceHigh,
   ),
+
+  iconTheme: const IconThemeData(color: AppColors.lavender),
 
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.transparent,
@@ -254,47 +357,52 @@ final appTheme = ThemeData(
 
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
-    fillColor: Colors.white,
+    fillColor: const Color(0xFF211530),
     contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 15),
-    prefixIconColor: AppColors.magenta,
+    prefixIconColor: AppColors.pinkText,
     suffixIconColor: AppColors.muted,
     hintStyle: GoogleFonts.urbanist(
-      color: const Color(0xFFBFA4C4),
+      color: const Color(0xFF9B87A8),
       fontSize: 13.5,
     ),
     labelStyle: GoogleFonts.urbanist(color: AppColors.muted, fontSize: 12.5),
+    floatingLabelStyle: GoogleFonts.urbanist(
+      color: AppColors.pinkText,
+      fontSize: 12.5,
+    ),
     helperStyle: GoogleFonts.urbanist(color: AppColors.muted, fontSize: 11),
-
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.medium),
-      borderSide: const BorderSide(color: AppColors.outline, width: 1.4),
+      borderSide: const BorderSide(color: AppColors.outline, width: 1.2),
     ),
-
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.medium),
-      borderSide: const BorderSide(color: AppColors.outline, width: 1.4),
+      borderSide: const BorderSide(color: AppColors.outline, width: 1.2),
     ),
-
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.medium),
-      borderSide: const BorderSide(color: AppColors.magenta, width: 1.8),
+      borderSide: const BorderSide(color: AppColors.coral, width: 1.6),
     ),
-
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.medium),
-      borderSide: const BorderSide(color: AppColors.error, width: 1.4),
+      borderSide: const BorderSide(color: AppColors.error, width: 1.2),
     ),
-
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.medium),
-      borderSide: const BorderSide(color: AppColors.error, width: 1.8),
+      borderSide: const BorderSide(color: AppColors.error, width: 1.6),
     ),
   ),
 
+  textSelectionTheme: const TextSelectionThemeData(
+    cursorColor: AppColors.coral,
+    selectionColor: Color(0x55E6367F),
+    selectionHandleColor: AppColors.coral,
+  ),
+
   chipTheme: ChipThemeData(
-    backgroundColor: Colors.white,
-    selectedColor: AppColors.magenta,
-    side: const BorderSide(color: AppColors.outline, width: 1.3),
+    backgroundColor: AppColors.surfaceHigh,
+    selectedColor: AppColors.magentaDeep,
+    side: const BorderSide(color: AppColors.outline, width: 1.2),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppRadius.pill),
     ),
@@ -308,7 +416,7 @@ final appTheme = ThemeData(
   ),
 
   cardTheme: CardThemeData(
-    color: Colors.white,
+    color: AppColors.surface,
     elevation: 0,
     margin: EdgeInsets.zero,
     shape: RoundedRectangleBorder(
@@ -321,6 +429,8 @@ final appTheme = ThemeData(
     style: FilledButton.styleFrom(
       backgroundColor: AppColors.magentaDeep,
       foregroundColor: Colors.white,
+      disabledBackgroundColor: const Color(0xFF3A2B47),
+      disabledForegroundColor: const Color(0xFF8F7CA0),
       minimumSize: const Size(0, 50),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -335,8 +445,13 @@ final appTheme = ThemeData(
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
       foregroundColor: AppColors.primary,
+      disabledForegroundColor: const Color(0xFF7D6A8C),
+      backgroundColor: Colors.white.withValues(alpha: .04),
       minimumSize: const Size(0, 48),
-      side: const BorderSide(color: AppColors.outline, width: 1.4),
+      side: BorderSide(
+        color: AppColors.pinkText.withValues(alpha: .38),
+        width: 1.2,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
@@ -349,7 +464,7 @@ final appTheme = ThemeData(
 
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
-      foregroundColor: AppColors.magenta,
+      foregroundColor: AppColors.pinkText,
       textStyle: GoogleFonts.urbanist(
         fontWeight: FontWeight.w800,
         fontSize: 12.5,
@@ -357,8 +472,70 @@ final appTheme = ThemeData(
     ),
   ),
 
+  iconButtonTheme: IconButtonThemeData(
+    style: IconButton.styleFrom(foregroundColor: AppColors.lavender),
+  ),
+
   dividerTheme: const DividerThemeData(color: AppColors.outline, thickness: 1),
 
-  splashColor: Color(0x26E6367F),
-  highlightColor: Color(0x12E6367F),
+  dialogTheme: DialogThemeData(
+    backgroundColor: AppColors.surfaceHigh,
+    surfaceTintColor: Colors.transparent,
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      side: BorderSide(color: Colors.white.withValues(alpha: .10)),
+    ),
+    titleTextStyle: GoogleFonts.urbanist(
+      fontSize: 19,
+      fontWeight: FontWeight.w800,
+      color: AppColors.primary,
+    ),
+    contentTextStyle: GoogleFonts.urbanist(
+      fontSize: 13.5,
+      color: AppColors.ink,
+      height: 1.4,
+    ),
+  ),
+
+  bottomSheetTheme: const BottomSheetThemeData(
+    backgroundColor: Colors.transparent,
+    surfaceTintColor: Colors.transparent,
+    modalBackgroundColor: Colors.transparent,
+  ),
+
+  snackBarTheme: SnackBarThemeData(
+    behavior: SnackBarBehavior.floating,
+    backgroundColor: const Color(0xFF33203F),
+    contentTextStyle: GoogleFonts.urbanist(
+      color: AppColors.primary,
+      fontWeight: FontWeight.w600,
+      fontSize: 13,
+    ),
+    actionTextColor: AppColors.pinkText,
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(color: Colors.white.withValues(alpha: .10)),
+    ),
+  ),
+
+  checkboxTheme: CheckboxThemeData(
+    fillColor: WidgetStateProperty.resolveWith(
+      (s) => s.contains(WidgetState.selected)
+          ? AppColors.magenta
+          : Colors.transparent,
+    ),
+    checkColor: const WidgetStatePropertyAll(Colors.white),
+    side: const BorderSide(color: AppColors.muted, width: 1.4),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+  ),
+
+  progressIndicatorTheme: const ProgressIndicatorThemeData(
+    color: AppColors.coral,
+    circularTrackColor: Color(0x22FFFFFF),
+  ),
+
+  splashColor: const Color(0x26E6367F),
+  highlightColor: const Color(0x12E6367F),
 );

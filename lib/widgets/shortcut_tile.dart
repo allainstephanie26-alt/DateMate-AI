@@ -22,7 +22,7 @@ class ShortcutTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadius.medium),
       child: InkWell(
         onTap: onTap,
@@ -31,7 +31,7 @@ class ShortcutTile extends StatelessWidget {
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.medium),
-            border: Border.all(color: AppColors.outline),
+            border: Border.all(color: Colors.white.withValues(alpha: .08)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

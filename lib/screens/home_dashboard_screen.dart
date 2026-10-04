@@ -70,7 +70,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     final partner = _partnerName();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -101,7 +101,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                'Hi ${user.name} & $partner',
+                                '${_greeting()}, ${user.name} & $partner',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(
@@ -128,7 +128,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                           customBorder: const CircleBorder(),
                           child: AvatarBadge(
                             initial: _partnerInitial(),
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: AppColors.magentaDeep,
                             textColor: Colors.white,
                           ),
                         ),
@@ -296,16 +296,17 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     required String currency,
   }) {
     return Material(
-      color: Colors.white,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () => onNavTap(3),
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.outline.withValues(alpha: .7)),
+            border: Border.all(color: Colors.white.withValues(alpha: .11)),
           ),
           child: Row(
             children: [
@@ -364,7 +365,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(26),
             gradient: AppColors.heroGradient,
-            boxShadow: AppShadows.card,
+            border: Border.all(color: Colors.white.withValues(alpha: .14)),
+            boxShadow: AppShadows.glow,
           ),
           child: Stack(
             children: [
@@ -376,6 +378,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                         category: idea.category,
                         seedKey: idea.placeId,
                         assetPath: idea.imageUrl,
+                        aiIdea: idea.imageUrl.isEmpty && !idea.verified,
                         height: 220,
                         borderRadius: 0,
                       ),
@@ -388,8 +391,10 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        AppColors.primary.withValues(alpha: .93),
+                        AppColors.primaryDark.withValues(alpha: .35),
+                        AppColors.primaryDark.withValues(alpha: .94),
                       ],
+                      stops: const [0.2, 0.55, 1.0],
                     ),
                   ),
                 ),
@@ -407,8 +412,11 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .16),
+                        color: Colors.white.withValues(alpha: .14),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .24),
+                        ),
                       ),
                       child: const Text(
                         "TONIGHT'S IDEA",
@@ -581,6 +589,15 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     ],
   );
 
+  /// Greeting based on Philippine time (UTC+8), independent of the device's
+  /// own time zone.
+  String _greeting() {
+    final hour = DateTime.now().toUtc().add(const Duration(hours: 8)).hour;
+    if (hour >= 5 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   String _partnerName() {
     final c = controller.couple;
     if (c == null || c.memberIds.length < 2) return 'your partner';
@@ -673,16 +690,20 @@ class _MoodTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 170),
+        duration: const Duration(milliseconds: 200),
         width: 104,
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
+          gradient: selected
+              ? AppColors.buttonGradient
+              : AppColors.cardGradient,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.outline,
+            color: selected
+                ? Colors.white.withValues(alpha: .3)
+                : Colors.white.withValues(alpha: .09),
           ),
-          boxShadow: selected ? AppShadows.soft : null,
+          boxShadow: selected ? AppShadows.glow : AppShadows.soft,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -690,7 +711,7 @@ class _MoodTile extends StatelessWidget {
             Icon(
               mood.icon,
               size: 22,
-              color: selected ? Colors.white : AppColors.gradientEnd,
+              color: selected ? Colors.white : AppColors.pinkText,
             ),
             const Spacer(),
             Text(
@@ -728,9 +749,9 @@ class _QuickAction extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: AppColors.cardGradient,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.outline),
+          border: Border.all(color: Colors.white.withValues(alpha: .09)),
           boxShadow: AppShadows.soft,
         ),
         child: Row(
@@ -739,10 +760,13 @@ class _QuickAction extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: AppColors.blush,
+                gradient: AppColors.chipGradient,
                 borderRadius: BorderRadius.circular(13),
+                border: Border.all(
+                  color: AppColors.pinkText.withValues(alpha: .25),
+                ),
               ),
-              child: Icon(icon, color: AppColors.gradientEnd, size: 19),
+              child: Icon(icon, color: AppColors.pinkText, size: 19),
             ),
             const SizedBox(width: 9),
             Expanded(
@@ -783,32 +807,40 @@ class _HeroButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: filled ? Colors.white : Colors.white.withValues(alpha: .14),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: filled ? AppColors.primary : Colors.white,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: filled ? AppColors.primary : Colors.white,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
+    final radius = BorderRadius.circular(14);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: filled ? AppColors.buttonGradient : null,
+        color: filled ? null : Colors.white.withValues(alpha: .12),
+        borderRadius: radius,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: filled ? .28 : .22),
+        ),
+        boxShadow: filled ? AppShadows.glow : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 15, color: Colors.white),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -841,6 +873,9 @@ class _SavedPreview extends StatelessWidget {
                   category: item.category,
                   seedKey: item.id,
                   assetPath: item.imageUrl,
+                  aiIdea:
+                      item.imageUrl.isEmpty &&
+                      item.subtitle != 'Added manually',
                   height: 62,
                   borderRadius: 0,
                 ),

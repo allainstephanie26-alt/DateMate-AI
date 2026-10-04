@@ -33,7 +33,7 @@ class BucketListTile extends StatelessWidget {
         ),
         child: const Icon(
           Icons.delete_outline_rounded,
-          color: AppColors.magentaDeep,
+          color: AppColors.pinkText,
         ),
       ),
       confirmDismiss: (_) async {
@@ -41,7 +41,7 @@ class BucketListTile extends StatelessWidget {
         return true;
       },
       child: Material(
-        color: Colors.white,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.medium),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -49,8 +49,10 @@ class BucketListTile extends StatelessWidget {
           child: Container(
             margin: const EdgeInsets.only(bottom: 14),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.outline),
+              gradient: AppColors.cardGradient,
+              border: Border.all(color: Colors.white.withValues(alpha: .09)),
               borderRadius: BorderRadius.circular(AppRadius.medium),
+              boxShadow: AppShadows.soft,
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -63,6 +65,11 @@ class BucketListTile extends StatelessWidget {
                       category: item.category,
                       seedKey: item.id,
                       assetPath: item.imageUrl,
+                      // Saved DateMate ideas carry no bundled photo; manual
+                      // entries ("Added manually") keep the original look.
+                      aiIdea:
+                          item.imageUrl.isEmpty &&
+                          item.subtitle != 'Added manually',
                       height: 122,
                       borderRadius: 0,
                     ),
@@ -75,7 +82,7 @@ class BucketListTile extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: .46),
+                          color: AppColors.primaryDark.withValues(alpha: .66),
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
@@ -111,7 +118,9 @@ class BucketListTile extends StatelessWidget {
                                       : Icons.circle_outlined,
                                   color: done
                                       ? AppColors.success
-                                      : AppColors.outline,
+                                      : AppColors.pinkText.withValues(
+                                          alpha: .6,
+                                        ),
                                   size: 27,
                                 ),
                               ),
@@ -160,7 +169,7 @@ class BucketListTile extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                                 color: done
                                     ? AppColors.success
-                                    : AppColors.magentaDeep,
+                                    : AppColors.pinkText,
                               ),
                             ),
                           ),
