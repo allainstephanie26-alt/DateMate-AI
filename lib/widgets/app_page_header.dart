@@ -28,7 +28,7 @@ class AppPageHeader extends StatelessWidget {
                 icon: Icons.arrow_back_ios_new_rounded,
                 onTap: onBack!,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 13),
             ],
             Expanded(
               child: Column(
@@ -53,7 +53,7 @@ class AppPageHeader extends StatelessWidget {
           ],
         ),
         if (trailing != null) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Align(alignment: Alignment.centerRight, child: trailing!),
         ],
       ],
@@ -70,14 +70,14 @@ class _HeaderIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.blush,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: SizedBox(
-          width: 42,
-          height: 42,
-          child: Icon(icon, size: 17, color: AppColors.primary),
+          width: 44,
+          height: 44,
+          child: Icon(icon, size: 17, color: AppColors.magentaDeep),
         ),
       ),
     );

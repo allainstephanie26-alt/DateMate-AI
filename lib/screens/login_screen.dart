@@ -143,9 +143,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Text(
                         'DateMate AI',
                         style: TextStyle(
-                          fontFamily: 'Georgia',
                           fontSize: 31,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
                           color: AppColors.primary,
                         ),
                       ),

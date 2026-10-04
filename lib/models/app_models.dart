@@ -144,6 +144,7 @@ class BucketListItem {
   final String? note;
   final DateTime? completedAt;
   final String imageUrl;
+  final bool verified;
 
   const BucketListItem({
     required this.id,
@@ -158,6 +159,7 @@ class BucketListItem {
     this.note,
     this.completedAt,
     this.imageUrl = '',
+    this.verified = false,
   });
 
   BucketListItem copyWith({
@@ -179,6 +181,7 @@ class BucketListItem {
     note: note ?? this.note,
     completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
     imageUrl: imageUrl,
+    verified: verified,
   );
 
   Map<String, dynamic> toMap() => {
@@ -194,6 +197,7 @@ class BucketListItem {
     'note': note,
     'completedAt': completedAt?.toIso8601String(),
     'imageUrl': imageUrl,
+    'verified': verified,
   };
 
   factory BucketListItem.fromMap(Map<String, dynamic> m) => BucketListItem(
@@ -215,6 +219,7 @@ class BucketListItem {
         ? null
         : DateTime.tryParse(m['completedAt'].toString()),
     imageUrl: m['imageUrl'] as String? ?? '',
+    verified: m['verified'] as bool? ?? false,
   );
 }
 
@@ -239,6 +244,7 @@ class DateSuggestion {
   final String openingHours;
   final String recommendationReason;
   final String verifiedSourceUrl;
+  final bool verified;
 
   const DateSuggestion({
     required this.id,
@@ -261,6 +267,7 @@ class DateSuggestion {
     this.openingHours = '',
     this.recommendationReason = '',
     this.verifiedSourceUrl = '',
+    this.verified = false,
   });
 
   Map<String, dynamic> toMap() => {
@@ -284,5 +291,6 @@ class DateSuggestion {
     'openingHours': openingHours,
     'recommendationReason': recommendationReason,
     'verifiedSourceUrl': verifiedSourceUrl,
+    'verified': verified,
   };
 }

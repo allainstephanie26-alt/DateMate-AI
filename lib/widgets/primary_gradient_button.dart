@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-class PrimaryGradientButton extends StatelessWidget {
+/// The app's primary call-to-action: the full coral → magenta → violet
+/// gradient with a soft colored glow underneath, reserved for the one
+/// action per screen that matters most (save, generate, sign in) so it
+/// keeps reading as a highlight rather than becoming the default button.
+class PrimaryGradientButton extends StatefulWidget {
   const PrimaryGradientButton({
     super.key,
     required this.label,
     required this.onPressed,
     this.icon,
     this.loading = false,
-    this.height = 50,
+    this.height = 52,
   });
 
   final String label;
@@ -18,55 +22,77 @@ class PrimaryGradientButton extends StatelessWidget {
   final double height;
 
   @override
+  State<PrimaryGradientButton> createState() => _PrimaryGradientButtonState();
+}
+
+class _PrimaryGradientButtonState extends State<PrimaryGradientButton> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    final enabled = widget.onPressed != null && !widget.loading;
+    if (!enabled) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final enabled = onPressed != null && !loading;
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 150),
-      opacity: enabled ? 1 : .48,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: enabled
-              ? AppColors.buttonGradient
-              : const LinearGradient(
-                  colors: [AppColors.muted, AppColors.muted],
-                ),
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          boxShadow: enabled ? AppShadows.soft : null,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: enabled ? onPressed : null,
+    final enabled = widget.onPressed != null && !widget.loading;
+    return AnimatedScale(
+      scale: _pressed ? .97 : 1,
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 150),
+        opacity: enabled ? 1 : .45,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: enabled
+                ? AppColors.buttonGradient
+                : const LinearGradient(
+                    colors: [AppColors.muted, AppColors.muted],
+                  ),
             borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: SizedBox(
-              height: height,
-              child: Center(
-                child: loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (icon != null) ...[
-                            Icon(icon, color: Colors.white, size: 18),
-                            const SizedBox(width: 8),
-                          ],
-                          Text(
-                            label,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                            ),
+            boxShadow: enabled ? AppShadows.glow : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: enabled ? widget.onPressed : null,
+              onTapDown: (_) => _setPressed(true),
+              onTapUp: (_) => _setPressed(false),
+              onTapCancel: () => _setPressed(false),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: SizedBox(
+                height: widget.height,
+                child: Center(
+                  child: widget.loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (widget.icon != null) ...[
+                              Icon(widget.icon, color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                            ],
+                            Text(
+                              widget.label,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
               ),
             ),
           ),

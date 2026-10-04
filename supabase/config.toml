@@ -1,0 +1,26 @@
+# Supabase CLI project config for DateMate AI.
+# Used by `supabase start` (local dev stack) and `supabase functions serve`.
+# See: https://supabase.com/docs/guides/local-development/cli/config
+
+project_id = "datemate-ai"
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+# Set to false while developing locally if you don't want to click a
+# confirmation link every time you create a test account. Keep it true in
+# production — see docs/06-security-and-privacy.md.
+enable_confirmations = true
+
+[functions.datemate-chat]
+verify_jwt = true

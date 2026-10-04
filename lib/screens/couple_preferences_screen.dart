@@ -8,6 +8,7 @@ import '../widgets/app_card.dart';
 import '../widgets/app_page_header.dart';
 import '../widgets/primary_gradient_button.dart';
 import '../widgets/selectable_chip.dart';
+import '../data/catalog_data.dart';
 
 class CouplePreferencesScreen extends StatefulWidget {
   const CouplePreferencesScreen({
@@ -28,6 +29,7 @@ class CouplePreferencesScreen extends StatefulWidget {
 
 class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
   late Set<String> foods;
+  // (reactive-listener fields declared after initState below)
   late Set<String> activities;
   late Set<String> locations;
   late String currency;
@@ -136,14 +138,21 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
         ? ''
         : c.budget.round().toString();
     _saved = c != null && c.locations.isNotEmpty && c.budget > 0;
+
+    widget.controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
     locationController.dispose();
     budgetController.dispose();
     codeController.dispose();
     super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
   }
 
   void toggle(Set<String> group, String label) {
@@ -459,7 +468,7 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
                         const SizedBox(height: 4),
 
                         Text(
-                          'Type a city, district, or area. DateMate will dynamically search real places there.',
+                          'Type a city, or tap one below. DateMate matches it against its verified places and its unlimited local idea generator — no place-search API required.',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
 
@@ -478,6 +487,29 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
                             prefixIcon: Icon(Icons.search_rounded),
                             hintText: 'e.g. Clark City, Pampanga',
                           ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Wrap(
+                          spacing: 7,
+                          runSpacing: 7,
+                          children: CatalogData.cityNames.map((city) {
+                            final selected =
+                                locationController.text.trim().toLowerCase() ==
+                                city.toLowerCase();
+                            return SelectableChip(
+                              label: city,
+                              selected: selected,
+                              onTap: () {
+                                setState(() {
+                                  locationController.text = city;
+                                  currency = currencyForLocation(city);
+                                  _saved = false;
+                                });
+                              },
+                            );
+                          }).toList(),
                         ),
 
                         const SizedBox(height: 10),
@@ -553,8 +585,8 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
                   Center(
                     child: Text(
                       c.cloud.enabled
-                          ? 'Your preferences sync through Firebase.'
-                          : 'Your preferences are stored locally. Firebase is optional.',
+                          ? 'Your preferences sync through Supabase.'
+                          : 'Your preferences are stored locally. Supabase sync is optional.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.labelSmall,
                     ),
@@ -629,9 +661,8 @@ class _CouplePreferencesScreenState extends State<CouplePreferencesScreen> {
                 child: Text(
                   couple?.code ?? '—',
                   style: const TextStyle(
-                    fontFamily: 'Georgia',
                     fontSize: 26,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: 2,
                     color: AppColors.primary,
                   ),

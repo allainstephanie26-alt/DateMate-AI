@@ -21,6 +21,22 @@ class BucketListScreen extends StatefulWidget {
 class _BucketListScreenState extends State<BucketListScreen> {
   String filter = 'All';
 
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _message(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
@@ -94,8 +110,10 @@ class _BucketListScreenState extends State<BucketListScreen> {
                   (i) => IconButton(
                     onPressed: () => setDialog(() => rating = i + 1.0),
                     icon: Icon(
-                      i < rating ? Icons.star : Icons.star_border,
-                      color: const Color(0xFFD9A441),
+                      i < rating
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: AppColors.gold,
                       size: 30,
                     ),
                   ),

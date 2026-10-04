@@ -10,9 +10,9 @@ name: Deploy DateMate-AI web demo
 # visits the site, so it matters which kind you are shipping:
 #
 #   Safe to ship: project identifiers whose data is protected by rules, i.e. the
-#   Firebase config in firebase_options.dart and the Supabase URL plus publishable
-#   key. Both vendors document these as safe to expose in a client. Your Firestore
-#   rules and your Supabase RLS policies are what actually protect the data.
+#   Supabase URL plus publishable key. Supabase documents these as safe to
+#   expose in a client — your Row Level Security policies (see
+#   supabase/migrations/0001_init.sql) are what actually protect the data.
 #
 #   NOT safe to ship: anything billable or privileged. A Gemini API key, a
 #   Supabase secret (service_role) key, a service account JSON. A stranger can
@@ -46,10 +46,6 @@ jobs:
       ready: ${{ steps.check.outputs.ready }}
     steps:
       - uses: actions/checkout@v7
-
-      # A fresh copy of the template has no Flutter app in it yet. Skip quietly
-      # rather than failing, so your repo is not red before you have written
-      # anything. Once pubspec.yaml exists, every push deploys.
       - id: check
         env:
           IS_PRIVATE: ${{ github.event.repository.private }}
@@ -74,8 +70,6 @@ jobs:
       - if: steps.check.outputs.ready == 'true'
         run: flutter pub get
 
-      # Neither of these blocks your deploy: a failing test should not take your
-      # live link down. They are here so you find out before your grader does.
       - if: steps.check.outputs.ready == 'true'
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
@@ -87,17 +81,13 @@ jobs:
       - name: Build web
         if: steps.check.outputs.ready == 'true'
         env:
-          # Uncomment to match the repository secrets you actually created.
-          # SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          # SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          DUMMY: unused
-        # --base-href matters: on a project page the site lives at
-        # username.github.io/<repo>/, and without it every asset 404s and you get
-        # a white screen.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           flutter build web --release \
-            --base-href "/${{ github.event.repository.name }}/"
-          # add one --dart-define=NAME=$NAME line per secret you uncommented above
+            --base-href "/${{ github.event.repository.name }}/" \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
 
       - if: steps.check.outputs.ready == 'true'
         uses: actions/upload-pages-artifact@v5
@@ -106,7 +96,6 @@ jobs:
 
   deploy:
     needs: build
-    # Skipped, not failed, when there is no app yet or the repo is private.
     if: needs.build.outputs.ready == 'true' && github.event.repository.private == false
     runs-on: ubuntu-latest
     environment:

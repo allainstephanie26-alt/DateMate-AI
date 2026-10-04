@@ -10,6 +10,7 @@ import '../widgets/selectable_chip.dart';
 import '../widgets/app_page_header.dart';
 import '../widgets/place_image.dart';
 import '../widgets/datemate_chat_sheet.dart';
+import '../widgets/place_browse_section.dart';
 import '../models/app_models.dart';
 
 class AiRecommendationScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class AiRecommendationScreen extends StatefulWidget {
 
 class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
   String mood = 'Chill';
+  final _browseSectionKey = GlobalKey<PlaceBrowseSectionState>();
 
   @override
   void initState() {
@@ -44,6 +46,31 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
 
   void _controllerChanged() {
     if (mounted) setState(() {});
+  }
+
+  /// A key that changes whenever the search criteria change, so the browse
+  /// grid below restarts from page 0 with fresh results instead of mixing
+  /// pages generated for a previous mood or filter set.
+  String get _browseToken {
+    final couple = widget.controller.couple;
+    return [
+      mood,
+      couple?.locations.join(',') ?? '',
+      couple?.foods.join(',') ?? '',
+      couple?.activities.join(',') ?? '',
+      couple?.budget ?? 0,
+    ].join('|');
+  }
+
+  /// Fires when the outer page scrolls near the bottom, so the "unlimited
+  /// places" grid keeps growing as the couple scrolls instead of stopping
+  /// at one page — the "Load more" button underneath does the same thing
+  /// for a tap-only alternative.
+  bool _onScrollNotification(ScrollNotification n) {
+    if (n.metrics.pixels > n.metrics.maxScrollExtent - 500) {
+      _browseSectionKey.currentState?.loadMore();
+    }
+    return false;
   }
 
   @override
@@ -63,10 +90,10 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
 
     if (widget.controller.currentSuggestions.isEmpty) {
       _toast(
-        'No verified place matches that location, currency, and budget combination.',
+        'No verified place matches that combination yet — DateMate ideas below should still fit.',
       );
     } else {
-      _toast('Real places matching your saved preferences are ready.');
+      _toast('Ideas matching your saved preferences are ready.');
     }
   }
 
@@ -122,230 +149,250 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppPageHeader(
-                      title: 'AI Date Recommendation',
-                      subtitle: 'A calmer way to choose your next date',
-                      onBack: () => widget.onNavTap?.call(0),
-                      trailing: Container(
-                        width: 42,
-                        height: 42,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _onScrollNotification,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppPageHeader(
+                        title: 'AI Date Recommendation',
+                        subtitle: 'A calmer way to choose your next date',
+                        onBack: () => widget.onNavTap?.call(0),
+                        trailing: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: AppColors.blush,
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: AppColors.gradientEnd,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(15),
                         decoration: BoxDecoration(
-                          color: AppColors.blush,
-                          borderRadius: BorderRadius.circular(13),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: AppColors.outline),
                         ),
-                        child: const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: AppColors.gradientEnd,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: AppColors.outline),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Tonight we feel...',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Tonight we feel...',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 7,
-                            runSpacing: 7,
-                            children:
-                                ['Chill', 'Foodie', 'Adventurous', 'Cheap date']
-                                    .map(
-                                      (m) => SelectableChip(
-                                        label: m,
-                                        selected: mood == m,
-                                        onTap: () async {
-                                          setState(() => mood = m);
-                                          await widget.controller
-                                              .generateMoodIdeas(m);
-                                          if (mounted) {
-                                            _toast(
-                                              'Fresh $m ideas are ready — this mood is independent of saved preferences.',
-                                            );
-                                          }
-                                        },
-                                      ),
-                                    )
-                                    .toList(),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 7,
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 7,
+                              runSpacing: 7,
+                              children:
+                                  [
+                                        'Chill',
+                                        'Foodie',
+                                        'Adventurous',
+                                        'Cheap date',
+                                      ]
+                                      .map(
+                                        (m) => SelectableChip(
+                                          label: m,
+                                          selected: mood == m,
+                                          onTap: () async {
+                                            setState(() => mood = m);
+                                            await widget.controller
+                                                .generateMoodIdeas(m);
+                                            if (mounted) {
+                                              _toast(
+                                                'Fresh $m ideas are ready — this mood is independent of saved preferences.',
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      )
+                                      .toList(),
                             ),
-                            decoration: BoxDecoration(
-                              color: _hasSavedFilters
-                                  ? AppColors.blush
-                                  : const Color(0xFFFFEEF3),
-                              borderRadius: BorderRadius.circular(12),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _hasSavedFilters
+                                    ? AppColors.blush
+                                    : AppColors.lavenderSoft,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _hasSavedFilters
+                                        ? Icons.tune_rounded
+                                        : Icons.explore_rounded,
+                                    size: 14,
+                                    color: AppColors.gradientEnd,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _hasSavedFilters
+                                        ? 'Using your saved preferences'
+                                        : 'Explore by mood — preferences are optional',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                            const SizedBox(height: 13),
+                            Row(
                               children: [
-                                Icon(
-                                  _hasSavedFilters
-                                      ? Icons.tune_rounded
-                                      : Icons.explore_rounded,
-                                  size: 14,
-                                  color: AppColors.gradientEnd,
+                                const Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                  size: 16,
+                                  color: AppColors.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 4),
                                 Text(
-                                  _hasSavedFilters
-                                      ? 'Using your saved preferences'
-                                      : 'Explore by mood — preferences are optional',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                                  c.couple == null || c.couple!.budget <= 0
+                                      ? 'Explore mode'
+                                      : '${c.couple!.budgetCurrency} ${c.couple!.budget.round()}',
+                                  style: Theme.of(context).textTheme.labelSmall,
+                                ),
+                                const SizedBox(width: 12),
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 16,
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    c.couple?.locations.isEmpty ?? true
+                                        ? 'Mood-only ideas — no location required'
+                                        : c.couple!.locations.join(', '),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 13),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.account_balance_wallet_outlined,
-                                size: 16,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                c.couple == null || c.couple!.budget <= 0
-                                    ? 'Explore mode'
-                                    : '${c.couple!.budgetCurrency} ${c.couple!.budget.round()}',
-                                style: Theme.of(context).textTheme.labelSmall,
-                              ),
-                              const SizedBox(width: 12),
-                              const Icon(
-                                Icons.location_on_outlined,
-                                size: 16,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  c.couple?.locations.isEmpty ?? true
-                                      ? 'Mood-only ideas — no location required'
-                                      : c.couple!.locations.join(', '),
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.labelSmall,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          PrimaryGradientButton(
-                            label: c.generating
-                                ? 'Finding real places...'
-                                : 'Generate New Ideas',
-                            icon: Icons.auto_awesome,
-                            loading: c.generating,
-                            onPressed: c.generating ? null : _generate,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    if (c.generating)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 28),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              CircularProgressIndicator(
-                                color: AppColors.gradientEnd,
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                'Matching location, preferences, and budget...',
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else if (c.currentSuggestions.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: AppColors.blush,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: const Column(
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              color: AppColors.gradientEnd,
-                              size: 32,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'No verified place currently matches every saved filter. Try a nearby area, another preference, or a higher budget.',
-                              textAlign: TextAlign.center,
+                            const SizedBox(height: 12),
+                            PrimaryGradientButton(
+                              label: c.generating
+                                  ? 'Finding real places...'
+                                  : 'Generate New Ideas',
+                              icon: Icons.auto_awesome,
+                              loading: c.generating,
+                              onPressed: c.generating ? null : _generate,
                             ),
                           ],
                         ),
-                      )
-                    else
-                      ...c.currentSuggestions.map(
-                        (s) => DateSuggestionCard(
-                          suggestion: s,
-                          isFavorite: c.isFavorite(s.id),
-                          isSaved: c.isSavedSuggestion(s),
-                          onAddToBucket: c.isSavedSuggestion(s)
-                              ? null
-                              : () async {
-                                  final added = await c.addToBucket(s);
-                                  _toast(
-                                    added
-                                        ? '${s.title} added to your Bucket List.'
-                                        : 'That place is already saved.',
-                                  );
-                                },
-                          onFavorite: () => c.toggleFavorite(s.id),
-                          onDetails: () => _showDetails(s),
+                      ),
+                      const SizedBox(height: 18),
+                      if (c.generating)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 28),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                CircularProgressIndicator(
+                                  color: AppColors.gradientEnd,
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  'Matching location, preferences, and budget...',
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else if (c.currentSuggestions.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: AppColors.blush,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Column(
+                            children: [
+                              Icon(
+                                Icons.search_off,
+                                color: AppColors.gradientEnd,
+                                size: 32,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'No verified place currently matches every saved filter. Browse the unlimited catalog below, or try a nearby area, another preference, or a higher budget.',
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ...c.currentSuggestions.map(
+                          (s) => DateSuggestionCard(
+                            suggestion: s,
+                            isFavorite: c.isFavorite(s.id),
+                            isSaved: c.isSavedSuggestion(s),
+                            onAddToBucket: c.isSavedSuggestion(s)
+                                ? null
+                                : () async {
+                                    final added = await c.addToBucket(s);
+                                    _toast(
+                                      added
+                                          ? '${s.title} added to your Bucket List.'
+                                          : 'That place is already saved.',
+                                    );
+                                  },
+                            onFavorite: () => c.toggleFavorite(s.id),
+                            onDetails: () => _showDetails(s),
+                          ),
+                        ),
+                      const SizedBox(height: 2),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 6),
+                        child: Text(
+                          'Cards marked "Verified" are real, named places with a source link. '
+                          'Cards marked "DateMate idea" are generated on-device from your preferences.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelSmall,
                         ),
                       ),
-                    const SizedBox(height: 2),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 6),
-                      child: Text(
-                        'Place discovery uses OpenStreetMap data when online. Details, prices, and hours are shown only when available from the source.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelSmall,
+                      PrimaryGradientButton(
+                        label: "Can't Decide? Pick for Us",
+                        icon: Icons.auto_awesome,
+                        onPressed: c.currentSuggestions.isEmpty || c.generating
+                            ? null
+                            : _pickForUs,
                       ),
-                    ),
-                    PrimaryGradientButton(
-                      label: "Can't Decide? Pick for Us",
-                      icon: Icons.auto_awesome,
-                      onPressed: c.currentSuggestions.isEmpty || c.generating
-                          ? null
-                          : _pickForUs,
-                    ),
-                  ],
+                      const SizedBox(height: 26),
+                      const Divider(),
+                      const SizedBox(height: 18),
+                      PlaceBrowseSection(
+                        key: ValueKey(_browseToken),
+                        controller: widget.controller,
+                        moodOverride: mood,
+                        onOpen: _showDetails,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -404,7 +451,9 @@ class _PlaceDetailsSheet extends StatelessWidget {
                   children: [
                     PlaceImage(
                       placeName: suggestion.title,
-                      source: suggestion.imageUrl,
+                      category: suggestion.category,
+                      seedKey: suggestion.placeId,
+                      assetPath: suggestion.imageUrl,
                       height: 205,
                       borderRadius: 0,
                     ),
@@ -445,9 +494,9 @@ class _PlaceDetailsSheet extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontFamily: 'Georgia',
                               fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.3,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -489,11 +538,7 @@ class _PlaceDetailsSheet extends StatelessWidget {
                       height: 112,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFFFFEAF1), Color(0xFFFCE5EC)],
-                        ),
+                        gradient: AppColors.softGradient,
                         borderRadius: BorderRadius.circular(17),
                         border: Border.all(color: AppColors.outline),
                       ),
@@ -743,148 +788,4 @@ class _MapPatternPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _PickForUsSheet extends StatelessWidget {
-  final DateSuggestion suggestion;
-  final AppController controller;
-  final VoidCallback onSaved;
-
-  const _PickForUsSheet({
-    required this.suggestion,
-    required this.controller,
-    required this.onSaved,
-  });
-
-  Future<void> _openMaps() async {
-    final uri = Uri.parse(suggestion.googleMapsUrl);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 760),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.outline,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: AppColors.blush,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome,
-                    color: AppColors.gradientEnd,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'DateMate AI',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "You couldn't decide, so I checked your saved preferences and selected one verified place that fits them.",
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: suggestion.imageUrl.isEmpty
-                  ? Container(
-                      height: 180,
-                      color: AppColors.blush,
-                      child: const Center(
-                        child: Icon(
-                          Icons.place,
-                          size: 48,
-                          color: AppColors.gradientEnd,
-                        ),
-                      ),
-                    )
-                  : PlaceImage(
-                      placeName: suggestion.title,
-                      source: suggestion.imageUrl,
-                      height: 180,
-                    ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              suggestion.title,
-              style: const TextStyle(
-                fontFamily: 'Georgia',
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              suggestion.location,
-              style: const TextStyle(color: AppColors.onSurfaceVariant),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.outline),
-              ),
-              child: Text(
-                'Why go here?\n\n${suggestion.recommendationReason}\n\nIt is listed at ${suggestion.price}, so it stays within the budget and currency you selected.',
-                style: const TextStyle(height: 1.45),
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _openMaps,
-              icon: const Icon(Icons.map_outlined),
-              label: const Text('Open in Google Maps'),
-            ),
-            const SizedBox(height: 8),
-            PrimaryGradientButton(
-              label: 'Save this date',
-              icon: Icons.favorite,
-              onPressed: () async {
-                final added = await controller.addToBucket(suggestion);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-                if (added) onSaved();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

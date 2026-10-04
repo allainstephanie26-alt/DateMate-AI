@@ -8,7 +8,7 @@ import '../widgets/app_card.dart';
 import '../widgets/avatar_badge.dart';
 import '../widgets/place_image.dart';
 
-class HomeDashboardScreen extends StatelessWidget {
+class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({
     super.key,
     required this.controller,
@@ -23,6 +23,33 @@ class HomeDashboardScreen extends StatelessWidget {
   final VoidCallback onGetFreshIdea;
   final VoidCallback onCantDecide;
   final VoidCallback onOpenBucketList;
+
+  @override
+  State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+}
+
+class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  AppController get controller => widget.controller;
+  ValueChanged<int> get onNavTap => widget.onNavTap;
+  VoidCallback get onGetFreshIdea => widget.onGetFreshIdea;
+  VoidCallback get onCantDecide => widget.onCantDecide;
+  VoidCallback get onOpenBucketList => widget.onOpenBucketList;
 
   @override
   Widget build(BuildContext context) {
@@ -84,18 +111,26 @@ class HomeDashboardScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        AvatarBadge(
-                          initial: user.name.isEmpty
-                              ? '?'
-                              : user.name[0].toUpperCase(),
-                          backgroundColor: AppColors.blushDeep,
-                          textColor: AppColors.primary,
+                        InkWell(
+                          onTap: () => onNavTap(3),
+                          customBorder: const CircleBorder(),
+                          child: AvatarBadge(
+                            initial: user.name.isEmpty
+                                ? '?'
+                                : user.name[0].toUpperCase(),
+                            backgroundColor: AppColors.blushDeep,
+                            textColor: AppColors.primary,
+                          ),
                         ),
                         const SizedBox(width: 4),
-                        AvatarBadge(
-                          initial: _partnerInitial(),
-                          backgroundColor: AppColors.primary,
-                          textColor: Colors.white,
+                        InkWell(
+                          onTap: () => onNavTap(3),
+                          customBorder: const CircleBorder(),
+                          child: AvatarBadge(
+                            initial: _partnerInitial(),
+                            backgroundColor: AppColors.primary,
+                            textColor: Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -179,44 +214,62 @@ class HomeDashboardScreen extends StatelessWidget {
                           ),
                     const SizedBox(height: 18),
                     AppCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: AppColors.blush,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Icon(
-                              Icons.history_rounded,
-                              color: AppColors.gradientEnd,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      padding: EdgeInsets.zero,
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: onOpenBucketList,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
                               children: [
-                                const Text(
-                                  'Last date together',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.primary,
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.blush,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(
+                                    Icons.history_rounded,
+                                    color: AppColors.gradientEnd,
                                   ),
                                 ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  completed.isEmpty
-                                      ? 'Your completed dates will appear here.'
-                                      : '${completed.first.name} · ${_formatDate(completed.first.completedAt ?? DateTime.now())}',
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Last date together',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        completed.isEmpty
+                                            ? 'Your completed dates will appear here.'
+                                            : '${completed.first.name} · ${_formatDate(completed.first.completedAt ?? DateTime.now())}',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: AppColors.muted,
                                 ),
                               ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -242,162 +295,183 @@ class HomeDashboardScreen extends StatelessWidget {
     required double budget,
     required String currency,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () => onNavTap(3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outline.withValues(alpha: .7)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.location_on_outlined,
-            size: 16,
-            color: AppColors.gradientEnd,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.outline.withValues(alpha: .7)),
           ),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Text(
-              location,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+          child: Row(
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: AppColors.gradientEnd,
               ),
-            ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  location,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              Container(width: 1, height: 18, color: AppColors.outline),
+              const SizedBox(width: 10),
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 16,
+                color: AppColors.gradientEnd,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                budget > 0 ? '$currency ${budget.round()}' : 'Budget not set',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.edit_rounded, size: 13, color: AppColors.muted),
+            ],
           ),
-          Container(width: 1, height: 18, color: AppColors.outline),
-          const SizedBox(width: 10),
-          const Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 16,
-            color: AppColors.gradientEnd,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            budget > 0 ? '$currency ${budget.round()}' : 'Budget not set',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _hero(BuildContext context, DateSuggestion? idea) {
-    return Container(
-      height: 220,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(26),
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: AppColors.heroGradient,
-        boxShadow: AppShadows.card,
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: idea == null
-                ? _heroArtwork()
-                : PlaceImage(
-                    placeName: idea.title,
-                    source: idea.imageUrl,
-                    height: 220,
-                    borderRadius: 0,
-                  ),
+      child: InkWell(
+        onTap: onGetFreshIdea,
+        child: Ink(
+          height: 220,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            gradient: AppColors.heroGradient,
+            boxShadow: AppShadows.card,
           ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    AppColors.primary.withValues(alpha: .93),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: idea == null
+                    ? _heroArtwork()
+                    : PlaceImage(
+                        placeName: idea.title,
+                        category: idea.category,
+                        seedKey: idea.placeId,
+                        assetPath: idea.imageUrl,
+                        height: 220,
+                        borderRadius: 0,
+                      ),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        AppColors.primary.withValues(alpha: .93),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .16),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        "TONIGHT'S IDEA",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      idea?.title ?? 'Your next date starts here',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        height: 1.05,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      idea == null
+                          ? 'Choose a vibe or save preferences to discover real places.'
+                          : '${idea.location} · ${idea.price}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _HeroButton(
+                            label: 'Fresh idea',
+                            icon: Icons.refresh_rounded,
+                            onTap: onGetFreshIdea,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _HeroButton(
+                            label: 'Pick for us',
+                            icon: Icons.auto_awesome_rounded,
+                            onTap: onCantDecide,
+                            filled: true,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .16),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "TONIGHT'S IDEA",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  idea?.title ?? 'Your next date starts here',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Georgia',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    height: 1.05,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  idea == null
-                      ? 'Choose a vibe or save preferences to discover real places.'
-                      : '${idea.location} · ${idea.price}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11.5),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _HeroButton(
-                        label: 'Fresh idea',
-                        icon: Icons.refresh_rounded,
-                        onTap: onGetFreshIdea,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _HeroButton(
-                        label: 'Pick for us',
-                        icon: Icons.auto_awesome_rounded,
-                        onTap: onCantDecide,
-                        filled: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -764,7 +838,9 @@ class _SavedPreview extends StatelessWidget {
                 height: 62,
                 child: PlaceImage(
                   placeName: item.name,
-                  source: item.imageUrl,
+                  category: item.category,
+                  seedKey: item.id,
+                  assetPath: item.imageUrl,
                   height: 62,
                   borderRadius: 0,
                 ),

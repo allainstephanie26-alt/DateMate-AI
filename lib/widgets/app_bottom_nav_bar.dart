@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
+/// A floating, frosted-glass nav bar — the active tab is filled with the
+/// brand gradient (an "active state" highlight) instead of a flat tint, so
+/// it reads as the one place on screen you're always oriented by.
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({
     super.key,
@@ -22,60 +25,74 @@ class AppBottomNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-        padding: const EdgeInsets.fromLTRB(7, 7, 7, 7),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.outline.withValues(alpha: .7)),
-          boxShadow: AppShadows.card,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: AppShadows.floating,
         ),
-        child: Row(
-          children: List.generate(items.length, (i) {
-            final item = items[i];
-            final active = i == currentIndex;
-            return Expanded(
-              child: Semantics(
-                button: true,
-                selected: active,
-                label: item.$3,
-                child: InkWell(
-                  onTap: () => onTap(i),
-                  borderRadius: BorderRadius.circular(18),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    padding: const EdgeInsets.symmetric(vertical: 7),
-                    decoration: BoxDecoration(
-                      color: active ? AppColors.blush : Colors.transparent,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          active ? item.$2 : item.$1,
-                          color: active ? AppColors.primary : AppColors.muted,
-                          size: 21,
+        child: GlassLayer(
+          borderRadius: 28,
+          blur: 22,
+          opacity: .82,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(7, 7, 7, 7),
+            child: Row(
+              children: List.generate(items.length, (i) {
+                final item = items[i];
+                final active = i == currentIndex;
+                return Expanded(
+                  child: Semantics(
+                    button: true,
+                    selected: active,
+                    label: item.$3,
+                    child: InkWell(
+                      onTap: () => onTap(i),
+                      borderRadius: BorderRadius.circular(20),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOut,
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          gradient: active ? AppColors.buttonGradient : null,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: active
+                              ? const [
+                                  BoxShadow(
+                                    color: Color(0x3DE6367F),
+                                    blurRadius: 14,
+                                    offset: Offset(0, 5),
+                                  ),
+                                ]
+                              : null,
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          item.$3,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: active
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: active ? AppColors.primary : AppColors.muted,
-                          ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              active ? item.$2 : item.$1,
+                              color: active ? Colors.white : AppColors.muted,
+                              size: 21,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              item.$3,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: active
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                color: active ? Colors.white : AppColors.muted,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            );
-          }),
+                );
+              }),
+            ),
+          ),
         ),
       ),
     );

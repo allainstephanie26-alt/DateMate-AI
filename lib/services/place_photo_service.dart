@@ -1,36 +1,45 @@
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 
-/// Free image lookup used when the app does not have a bundled place photo.
-/// It uses Wikipedia's public MediaWiki API and does not require a paid API key.
-class PlaceImageService {
-  PlaceImageService._();
+class PlacePhotoService {
+  PlacePhotoService._();
+  static final PlacePhotoService instance = PlacePhotoService._();
 
-  static final Map<String, String?> _cache = <String, String?>{};
+  final Map<String, String?> _cache = {};
+  final Map<String, Future<String?>> _inFlight = {};
 
-  static Future<String?> findImage(String placeName) async {
-    final key = placeName.trim().toLowerCase();
+  Future<String?> findPhoto(String query, {int thumbSizePx = 960}) async {
+    final key = query.trim().toLowerCase();
     if (key.isEmpty) return null;
     if (_cache.containsKey(key)) return _cache[key];
+    final pending = _inFlight[key];
+    if (pending != null) return pending;
 
+    final future = _fetch(query, key, thumbSizePx);
+    _inFlight[key] = future;
+    final result = await future;
+    _inFlight.remove(key);
+    return result;
+  }
+
+  Future<String?> _fetch(String query, String key, int thumbSizePx) async {
     try {
       final uri = Uri.https('en.wikipedia.org', '/w/api.php', {
         'action': 'query',
         'generator': 'search',
-        'gsrsearch': placeName,
+        'gsrsearch': query,
         'gsrnamespace': '0',
         'gsrlimit': '1',
         'prop': 'pageimages',
         'piprop': 'thumbnail',
-        'pithumbsize': '900',
+        'pithumbsize': '$thumbSizePx',
         'format': 'json',
         'origin': '*',
       });
 
       final response = await http
           .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 6));
 
       if (response.statusCode != 200) {
         _cache[key] = null;
@@ -54,11 +63,11 @@ class PlaceImageService {
           }
         }
       }
+      _cache[key] = null;
+      return null;
     } catch (_) {
-      // The UI has a designed fallback when the public image service is unavailable.
+      _cache[key] = null;
+      return null;
     }
-
-    _cache[key] = null;
-    return null;
   }
 }

@@ -1,199 +1,222 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
-import '../services/place_image_service.dart';
+import '../data/catalog_data.dart';
 import '../theme.dart';
 
-class PlaceImage extends StatefulWidget {
+/// A place "photo" card: a real local photo when one exists, and a
+/// designed illustrated hero — not a flat icon badge — when it doesn't.
+///
+/// This app makes no network image calls and uses no place-photo API (see
+/// `assets/places/README.md` for why). For the small set of verified real
+/// places, a real photo can be dropped in at `assets/places/<id>.jpg` and
+/// this widget picks it up automatically via [assetPath] — no other code
+/// changes needed. `Image.asset`'s own `errorBuilder` guarantees that a
+/// missing or corrupt file can never render as Flutter's broken-image
+/// icon: it falls straight through to the illustrated hero instead, so
+/// every card always renders something intentional.
+///
+/// The illustrated hero itself is built from layered, blurred gradient
+/// "aurora" shapes plus a glass icon medallion — designed to read as a
+/// branded editorial image, not a generic category icon.
+class PlaceImage extends StatelessWidget {
   const PlaceImage({
     super.key,
     required this.placeName,
-    this.source = '',
+    this.category = '',
+    this.seedKey = '',
+    this.assetPath = '',
     this.height = 180,
     this.borderRadius = 18,
   });
 
   final String placeName;
-  final String source;
+  final String category;
+  final String seedKey;
+
+  /// Local asset path to a real photo, e.g. `assets/places/hardin-angeles.jpg`.
+  /// Empty for every generated "DateMate idea" place, and for a verified
+  /// place whose photo hasn't been added yet.
+  final String assetPath;
+
   final double height;
   final double borderRadius;
 
-  @override
-  State<PlaceImage> createState() => _PlaceImageState();
-}
-
-class _PlaceImageState extends State<PlaceImage> {
-  String? _remoteUrl;
-  bool _loading = false;
-
-  bool get _isNetworkSource =>
-      widget.source.startsWith('http://') ||
-      widget.source.startsWith('https://');
-
-  bool get _isAssetSource => widget.source.startsWith('assets/');
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFallbackIfNeeded();
-  }
-
-  @override
-  void didUpdateWidget(covariant PlaceImage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.placeName != widget.placeName ||
-        oldWidget.source != widget.source) {
-      _remoteUrl = null;
-      _loadFallbackIfNeeded();
+  IconData get _icon {
+    final haystack = '$placeName $category'.toLowerCase();
+    for (final c in CatalogData.allCategories) {
+      if (haystack.contains(c.label.toLowerCase())) return c.icon;
+      for (final k in c.keywords) {
+        if (haystack.contains(k)) return c.icon;
+      }
     }
+    return Icons.favorite_rounded;
   }
 
-  Future<void> _loadFallbackIfNeeded() async {
-    if (_isNetworkSource) return;
-    setState(() => _loading = true);
-    final url = await PlaceImageService.findImage(widget.placeName);
-    if (!mounted) return;
-    setState(() {
-      _remoteUrl = url;
-      _loading = false;
-    });
+  List<Color> _gradient() {
+    final key = seedKey.isNotEmpty ? seedKey : placeName;
+    final index = key.isEmpty
+        ? 0
+        : key.codeUnits.fold<int>(0, (a, b) => a + b) %
+              AppColors.placeGradients.length;
+    return AppColors.placeGradients[index];
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget child;
-    if (_isNetworkSource) {
-      child = Image.network(
-        widget.source,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _fallback(),
-      );
-    } else if (_isAssetSource) {
-      child = Image.asset(
-        widget.source,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _remoteOrFallback(),
-      );
-    } else {
-      child = _remoteOrFallback();
-    }
-
+    final radius = BorderRadius.circular(borderRadius);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(widget.borderRadius),
+      borderRadius: radius,
       child: SizedBox(
-        height: widget.height,
+        height: height,
         width: double.infinity,
-        child: child,
+        child: assetPath.isEmpty
+            ? _IllustratedHero(
+                icon: _icon,
+                name: placeName,
+                colors: _gradient(),
+              )
+            : Image.asset(
+                assetPath,
+                fit: BoxFit.cover,
+                // A missing/corrupt file can never show as a broken-image
+                // icon — it falls through to the same illustrated hero
+                // every generated place already uses.
+                errorBuilder: (_, __, ___) => _IllustratedHero(
+                  icon: _icon,
+                  name: placeName,
+                  colors: _gradient(),
+                ),
+              ),
       ),
     );
   }
+}
 
-  Widget _remoteOrFallback() {
-    if (_remoteUrl != null) {
-      return Image.network(
-        _remoteUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _fallback(),
-      );
-    }
-    if (_loading) {
-      return Stack(
-        children: [
-          _fallback(),
-          const Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      );
-    }
-    return _fallback();
-  }
+/// The designed fallback hero: layered blurred "aurora" blobs over a
+/// 3-stop brand gradient, a soft diagonal sheen, and a glass medallion
+/// holding the category icon + the place's initial — composed to read as
+/// an intentional piece of art, not a placeholder.
+class _IllustratedHero extends StatelessWidget {
+  const _IllustratedHero({
+    required this.icon,
+    required this.name,
+    required this.colors,
+  });
 
-  Widget _fallback() {
-    final name = widget.placeName.trim();
-    final initial = name.isEmpty ? 'D' : name.substring(0, 1).toUpperCase();
-    final lower = name.toLowerCase();
-    final icon =
-        lower.contains('ramen') ||
-            lower.contains('restaurant') ||
-            lower.contains('food')
-        ? Icons.restaurant_rounded
-        : lower.contains('cafe') || lower.contains('coffee')
-        ? Icons.local_cafe_rounded
-        : lower.contains('museum') || lower.contains('gallery')
-        ? Icons.museum_rounded
-        : lower.contains('park') || lower.contains('garden')
-        ? Icons.park_rounded
-        : Icons.place_rounded;
+  final IconData icon;
+  final String name;
+  final List<Color> colors;
 
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = name.trim();
+    final initial = trimmed.isEmpty ? 'D' : trimmed[0].toUpperCase();
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
+      ),
       child: Stack(
+        fit: StackFit.expand,
         children: [
+          // Blurred aurora blobs — the "blurred elements" layer.
           Positioned(
-            right: -18,
-            top: -26,
-            child: Container(
-              width: 110,
-              height: 110,
+            left: -40,
+            top: -50,
+            child: _blob(160, colors.last.withValues(alpha: .55)),
+          ),
+          Positioned(
+            right: -30,
+            bottom: -40,
+            child: _blob(190, colors.first.withValues(alpha: .5)),
+          ),
+          Positioned(
+            right: 10,
+            top: -20,
+            child: _blob(90, Colors.white.withValues(alpha: .22)),
+          ),
+          // Diagonal gloss sheen for a premium, polished finish.
+          Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: .10),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: .14),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: .10),
+                  ],
+                  stops: const [0.0, 0.45, 1.0],
+                ),
               ),
             ),
           ),
+          // Large watermark icon, low-opacity, for depth and category cue.
           Positioned(
-            left: -28,
-            bottom: -38,
-            child: Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: .08),
-              ),
+            right: -6,
+            bottom: -14,
+            child: Icon(
+              icon,
+              size: 104,
+              color: Colors.white.withValues(alpha: .14),
             ),
           ),
+          // Glass medallion with the category icon + initial — the focal
+          // point, deliberately composed rather than a bare icon-on-color.
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .16),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: .30),
+                ClipOval(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .22),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .55),
+                          width: 1.4,
+                        ),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 27),
                     ),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 30),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 9),
                 Text(
                   initial,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'DateMate place preview',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: .78),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _blob(double size, Color color) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 36, sigmaY: 36),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       ),
     );
   }

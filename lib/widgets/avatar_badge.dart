@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// A couple-member avatar: a flat-color initial circle with a thin white
+/// ring, so two overlapping avatars (you + partner) stay visually
+/// separated on any background.
 class AvatarBadge extends StatelessWidget {
   final String initial;
   final Color backgroundColor;
@@ -10,13 +13,31 @@ class AvatarBadge extends StatelessWidget {
     required this.backgroundColor,
     required this.textColor,
   });
+
   @override
-  Widget build(BuildContext context) => CircleAvatar(
-    radius: 18,
-    backgroundColor: backgroundColor,
+  Widget build(BuildContext context) => Container(
+    width: 38,
+    height: 38,
+    decoration: BoxDecoration(
+      color: backgroundColor,
+      shape: BoxShape.circle,
+      border: Border.all(color: Colors.white, width: 2),
+      boxShadow: [
+        BoxShadow(
+          color: backgroundColor.withValues(alpha: .35),
+          blurRadius: 10,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    ),
+    alignment: Alignment.center,
     child: Text(
       initial,
-      style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+      style: TextStyle(
+        color: textColor,
+        fontWeight: FontWeight.w800,
+        fontSize: 14.5,
+      ),
     ),
   );
 }

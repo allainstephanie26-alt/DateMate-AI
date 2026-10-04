@@ -19,6 +19,14 @@ class CuratedPlace {
   final String description;
   final String verifiedSourceUrl;
 
+  /// True for the small hand-curated seed list (real, named businesses with
+  /// a verifiedSourceUrl). False for the much larger pool of places produced
+  /// by [PlaceCatalogService]'s local generator so the app can offer an
+  /// effectively unlimited number of date ideas without calling any paid
+  /// place-search API. The UI is honest about this distinction: generated
+  /// entries are labeled "DateMate idea" instead of "verified place".
+  final bool verified;
+
   const CuratedPlace({
     required this.id,
     required this.name,
@@ -39,6 +47,7 @@ class CuratedPlace {
     required this.hours,
     required this.description,
     required this.verifiedSourceUrl,
+    this.verified = false,
   });
 
   String get locationLabel => '$city, $country';

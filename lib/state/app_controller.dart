@@ -5,14 +5,14 @@ import 'package:flutter/foundation.dart';
 import '../models/app_models.dart';
 import '../services/cloud_sync_service.dart';
 import '../services/local_database.dart';
-import '../services/recommendation_service.dart';
+import '../services/place_catalog_service.dart';
 
 class AppController extends ChangeNotifier {
   final LocalDatabase db;
-  final RecommendationService recommendations;
+  final PlaceCatalogService catalog;
   final CloudSyncService cloud;
 
-  AppController(this.db, this.recommendations, this.cloud);
+  AppController(this.db, this.catalog, this.cloud);
 
   UserModel? currentUser;
   CoupleModel? couple;
@@ -20,8 +20,19 @@ class AppController extends ChangeNotifier {
   Set<String> favorites = {};
   String mood = 'Chill';
   List<DateSuggestion> currentSuggestions = [];
+
+  /// Ids shown in [currentSuggestions] or offered as chat alternates, kept
+  /// so "pick another" never repeats the same place twice in a row.
+  Set<String> recentlyShownIds = {};
+
   bool ready = false;
   bool busy = false;
+
+  /// True only while a background write to Supabase is in flight. Nothing
+  /// in the UI blocks on this — it is shown as a small, dismissible sync
+  /// indicator, not a full-screen spinner, because the local state (and the
+  /// generated suggestions) are already correct and on screen by the time
+  /// this flips true.
   bool syncing = false;
   bool generating = false;
   String? errorMessage;
@@ -66,6 +77,10 @@ class AppController extends ChangeNotifier {
   String _id(String prefix) =>
       '$prefix-${DateTime.now().microsecondsSinceEpoch}';
 
+  // ---------------------------------------------------------------------
+  // Auth
+  // ---------------------------------------------------------------------
+
   Future<bool> login(
     String email,
     String password, {
@@ -77,21 +92,19 @@ class AppController extends ChangeNotifier {
     try {
       if (cloud.enabled) {
         final credential = await cloud.signIn(normalized, password);
-        await credential.user?.reload();
-        final signedInUser = credential.user;
-        if (signedInUser != null && !signedInUser.emailVerified) {
+        final refreshed = await cloud.refreshCurrentUser() ?? credential;
+        if (!refreshed.emailVerified) {
           errorMessage =
-              'Please verify your email before signing in. Check your inbox for the Firebase verification link.';
+              'Please verify your email before signing in. Check your inbox for the confirmation link.';
           try {
-            await signedInUser.sendEmailVerification();
+            await cloud.resendVerificationEmail(normalized);
           } catch (_) {}
           await cloud.signOut();
           await db.delete(_sessionKey);
           _setBusy(false);
           return false;
         }
-        final uid = signedInUser!.uid;
-        final profile = await cloud.loadUser(uid);
+        final profile = await cloud.loadUser(refreshed.uid);
         if (profile == null) {
           errorMessage =
               'Your account profile is missing. Please create the account again.';
@@ -99,7 +112,14 @@ class AppController extends ChangeNotifier {
           return false;
         }
         currentUser = profile;
-        await _loadCouple();
+        if (profile.coupleId == null) {
+          // First confirmed login: the couple couldn't be created at
+          // sign-up time (no session existed yet), so it's created now,
+          // with a real authenticated session in place for the writes.
+          await createCouple();
+        } else {
+          await _loadCouple();
+        }
       } else {
         final users = _users;
         UserModel? found;
@@ -151,19 +171,18 @@ class AppController extends ChangeNotifier {
 
     try {
       if (cloud.enabled) {
-        final credential = await cloud.signUp(normalized, password);
-        await credential.user?.sendEmailVerification();
-        final user = UserModel(
-          id: credential.user!.uid,
-          email: normalized,
-          name: cleanName,
-          passwordHash: '',
-          coupleId: null,
-          createdAt: DateTime.now(),
-        );
-        currentUser = user;
-        await cloud.saveUser(user);
-        await createCouple();
+        // Supabase sends its own confirmation email as part of signUp, and
+        // a database trigger creates the `profiles` row (using the name
+        // passed here as signup metadata) the instant the auth user is
+        // created — there is no authenticated session yet to write with
+        // directly, since the account is not confirmed. The couple itself
+        // is created lazily on first confirmed login, below in `login()`.
+        await cloud.signUp(normalized, password, name: cleanName);
+        await cloud.signOut();
+        await db.delete(_sessionKey);
+        _setBusy(false);
+        notifyListeners();
+        return true;
       } else {
         final users = _users;
         if (users.values.any(
@@ -187,17 +206,11 @@ class AppController extends ChangeNotifier {
         await db.write(_usersKey, users);
         currentUser = user;
         await createCouple();
-      }
-      if (cloud.enabled) {
-        // A Firebase account must be verified before the app creates a signed-in session.
-        await cloud.signOut();
-        await db.delete(_sessionKey);
-      } else {
         await db.write(_sessionKey, currentUser!.id);
+        _setBusy(false);
+        notifyListeners();
+        return true;
       }
-      _setBusy(false);
-      notifyListeners();
-      return true;
     } catch (e) {
       errorMessage = _friendlyError(e);
       _setBusy(false);
@@ -215,16 +228,13 @@ class AppController extends ChangeNotifier {
 
     try {
       if (cloud.enabled) {
-        // Firebase sends the secure password-reset email.
         await cloud.resetPassword(normalized);
         errorMessage = null;
         notifyListeners();
         return true;
       }
-
-      // Local mode cannot send a real email, so provide a clear local-mode message.
       errorMessage =
-          'Password reset email requires Firebase authentication to be enabled.';
+          'Password reset requires Supabase authentication to be enabled.';
       notifyListeners();
       return false;
     } catch (e) {
@@ -248,6 +258,10 @@ class AppController extends ChangeNotifier {
     await db.delete(_sessionKey);
     notifyListeners();
   }
+
+  // ---------------------------------------------------------------------
+  // Couple
+  // ---------------------------------------------------------------------
 
   Future<void> createCouple() async {
     if (currentUser == null) return;
@@ -286,18 +300,25 @@ class AppController extends ChangeNotifier {
     if (currentUser == null || code.trim().isEmpty) return false;
     final normalized = code.trim().toUpperCase();
     try {
-      CoupleModel? existing;
       if (cloud.enabled) {
-        existing = await cloud.findCoupleByCode(normalized);
-      } else {
-        for (final value in _couples.values) {
-          final candidate = CoupleModel.fromMap(
-            Map<String, dynamic>.from(value),
-          );
-          if (candidate.code.toUpperCase() == normalized) {
-            existing = candidate;
-            break;
-          }
+        // The `join_couple` Postgres function does the lookup, the
+        // two-member check, and the membership update as one atomic,
+        // elevated-privilege call — a plain client-side update here would
+        // be correctly rejected by RLS, since the joining user isn't a
+        // member of the target couple yet.
+        final joined = await cloud.joinCoupleByCode(normalized);
+        currentUser = currentUser!.copyWith(coupleId: joined.id);
+        await _loadCouple();
+        notifyListeners();
+        return true;
+      }
+
+      CoupleModel? existing;
+      for (final value in _couples.values) {
+        final candidate = CoupleModel.fromMap(Map<String, dynamic>.from(value));
+        if (candidate.code.toUpperCase() == normalized) {
+          existing = candidate;
+          break;
         }
       }
       if (existing == null) {
@@ -317,13 +338,9 @@ class AppController extends ChangeNotifier {
         currentUser!.id: currentUser!.name,
       };
       final updated = existing.copyWith(memberIds: members, memberNames: names);
-      if (cloud.enabled) {
-        await cloud.saveCouple(updated);
-      } else {
-        final couples = _couples;
-        couples[updated.id] = updated.toMap();
-        await db.write(_couplesKey, couples);
-      }
+      final couples = _couples;
+      couples[updated.id] = updated.toMap();
+      await db.write(_couplesKey, couples);
       await _attachUserToCouple(currentUser!, updated.id);
       await _loadCouple();
       notifyListeners();
@@ -366,7 +383,7 @@ class AppController extends ChangeNotifier {
         if (names.length != couple!.memberNames.length ||
             names.entries.any((e) => e.value != couple!.memberNames[e.key])) {
           couple = couple!.copyWith(memberNames: names);
-          await cloud.saveCouple(couple!);
+          unawaited(cloud.saveCouple(couple!));
         }
         bucketItems = await cloud.loadBucket(couple!.id);
         favorites = await cloud.loadFavorites(couple!.id);
@@ -379,8 +396,9 @@ class AppController extends ChangeNotifier {
       final users = _users;
       for (final memberId in couple!.memberIds) {
         final member = users[memberId];
-        if (member is Map)
+        if (member is Map) {
           names[memberId] = (member['name'] ?? 'Partner').toString();
+        }
       }
       if (names.length != couple!.memberNames.length) {
         couple = couple!.copyWith(memberNames: names);
@@ -428,6 +446,17 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  // ---------------------------------------------------------------------
+  // Preferences + suggestions
+  //
+  // Saving is optimistic: the couple object, the suggestion list, and the
+  // UI all update in the same synchronous tick (generation reads the local
+  // catalog only — no network). The write to Hive is awaited because it is
+  // effectively instant; the write to Supabase, when cloud sync is on,
+  // happens in the background behind the `syncing` flag so the couple never
+  // has to watch a spinner just to save what food they like.
+  // ---------------------------------------------------------------------
+
   Future<void> savePreferences({
     required Set<String> foods,
     required Set<String> activities,
@@ -443,55 +472,96 @@ class AppController extends ChangeNotifier {
       budget: budget,
       budgetCurrency: budgetCurrency,
     );
-    if (cloud.enabled) {
-      await cloud.saveCouple(couple!);
-    } else {
-      final couples = _couples;
-      couples[couple!.id] = couple!.toMap();
-      await db.write(_couplesKey, couples);
-    }
-    await _generateSuggestions();
+    _generateSuggestions();
     notifyListeners();
+
+    final couples = _couples;
+    couples[couple!.id] = couple!.toMap();
+    await db.write(_couplesKey, couples);
+
+    if (cloud.enabled) {
+      syncing = true;
+      notifyListeners();
+      unawaited(
+        cloud.saveCouple(couple!).whenComplete(() {
+          syncing = false;
+          notifyListeners();
+        }),
+      );
+    }
+  }
+
+  CatalogQuery buildQuery({String? moodOverride}) => CatalogQuery(
+    locations: couple?.locations ?? const <String>{},
+    foods: couple?.foods ?? const <String>{},
+    activities: couple?.activities ?? const <String>{},
+    budget: couple?.budget ?? 0,
+    currency: couple?.budgetCurrency ?? 'PHP',
+    mood: moodOverride ?? mood,
+  );
+
+  /// One page of the scrollable "browse places" catalog. Effectively
+  /// unlimited: call again with an incrementing [page] as the user scrolls.
+  List<DateSuggestion> browsePlaces({
+    required int page,
+    int size = PlaceCatalogService.pageSize,
+    String? moodOverride,
+    Set<String> excludeIds = const {},
+  }) {
+    return catalog.page(
+      buildQuery(moodOverride: moodOverride),
+      page: page,
+      size: size,
+      excludedIds: excludeIds,
+    );
   }
 
   Future<void> generateSuggestions(String selectedMood) async {
     mood = selectedMood;
     generating = true;
-    errorMessage = null;
     notifyListeners();
-    await _generateSuggestions();
+    _generateSuggestions();
     generating = false;
     notifyListeners();
   }
 
-  Future<void> generateMoodIdeas(String selectedMood) async {
-    mood = selectedMood;
-    generating = true;
-    errorMessage = null;
-    notifyListeners();
-    _generationSeed++;
-    currentSuggestions = await recommendations.generateMoodAsync(
-      mood: selectedMood,
-      couple: couple,
-      seed: _generationSeed,
-    );
-    generating = false;
-    notifyListeners();
-  }
+  Future<void> generateMoodIdeas(String selectedMood) =>
+      generateSuggestions(selectedMood);
 
-  int _generationSeed = 0;
-
-  Future<void> _generateSuggestions() async {
+  void _generateSuggestions() {
     if (couple == null) {
       currentSuggestions = [];
       return;
     }
-    _generationSeed++;
-    currentSuggestions = await recommendations.generateAsync(
-      couple: couple!,
-      mood: mood,
-      seed: _generationSeed,
-    );
+    currentSuggestions = catalog.quickPicks(buildQuery());
+    recentlyShownIds = {
+      ...recentlyShownIds,
+      ...currentSuggestions.map((s) => s.id),
+    };
+  }
+
+  /// Rotates in a fresh batch, excluding whatever was already shown this
+  /// session so "Fresh idea" never repeats the same pick twice in a row.
+  Future<void> refreshSuggestions() async {
+    generating = true;
+    notifyListeners();
+    if (couple != null) {
+      final next = catalog.page(
+        buildQuery(),
+        page: (recentlyShownIds.length ~/ PlaceCatalogService.pageSize) + 1,
+        size: 8,
+        excludedIds: recentlyShownIds,
+      );
+      currentSuggestions = next.isNotEmpty
+          ? next
+          : catalog.quickPicks(buildQuery());
+      recentlyShownIds = {
+        ...recentlyShownIds,
+        ...currentSuggestions.map((s) => s.id),
+      };
+    }
+    generating = false;
+    notifyListeners();
   }
 
   bool isSavedSuggestion(DateSuggestion suggestion) {
@@ -503,6 +573,10 @@ class AppController extends ChangeNotifier {
               item.id.endsWith(suggestion.placeId)),
     );
   }
+
+  // ---------------------------------------------------------------------
+  // Bucket list
+  // ---------------------------------------------------------------------
 
   Future<bool> addToBucket(DateSuggestion suggestion) async {
     if (couple == null || currentUser == null) return false;
@@ -519,10 +593,11 @@ class AppController extends ChangeNotifier {
       createdAt: DateTime.now(),
       status: BucketListStatus.pending,
       imageUrl: suggestion.imageUrl,
+      verified: suggestion.verified,
     );
     bucketItems = [item, ...bucketItems];
-    await _saveBucket();
     notifyListeners();
+    unawaited(_saveBucket());
     return true;
   }
 
@@ -543,8 +618,8 @@ class AppController extends ChangeNotifier {
       status: BucketListStatus.pending,
     );
     bucketItems = [item, ...bucketItems];
-    await _saveBucket();
     notifyListeners();
+    unawaited(_saveBucket());
   }
 
   Future<void> toggleBucket(String id) async {
@@ -557,8 +632,8 @@ class AppController extends ChangeNotifier {
       completedAt: done ? DateTime.now() : null,
       clearCompletedAt: !done,
     );
-    await _saveBucket();
     notifyListeners();
+    unawaited(_saveBucket());
   }
 
   Future<void> reviewBucket(String id, double rating, String note) async {
@@ -570,18 +645,18 @@ class AppController extends ChangeNotifier {
       note: note.trim().isEmpty ? null : note.trim(),
       completedAt: DateTime.now(),
     );
-    await _saveBucket();
     notifyListeners();
+    unawaited(_saveBucket());
   }
 
   Future<void> deleteBucket(String id) async {
     bucketItems.removeWhere((i) => i.id == id);
-    if (cloud.enabled && couple != null) {
-      await cloud.deleteBucketItem(couple!.id, id);
-    } else {
-      await _saveBucket();
-    }
     notifyListeners();
+    if (cloud.enabled && couple != null) {
+      unawaited(cloud.deleteBucketItem(couple!.id, id));
+    } else {
+      unawaited(_saveBucket());
+    }
   }
 
   Future<void> _saveBucket() async {
@@ -603,12 +678,12 @@ class AppController extends ChangeNotifier {
     } else {
       favorites.add(suggestionId);
     }
-    if (cloud.enabled) {
-      await cloud.saveFavorites(couple!.id, favorites);
-    } else {
-      await db.write('favorites_${couple!.id}', favorites.toList());
-    }
     notifyListeners();
+    if (cloud.enabled) {
+      unawaited(cloud.saveFavorites(couple!.id, favorites));
+    } else {
+      unawaited(db.write('favorites_${couple!.id}', favorites.toList()));
+    }
   }
 
   bool isFavorite(String id) => favorites.contains(id);
@@ -616,12 +691,13 @@ class AppController extends ChangeNotifier {
   Future<void> updateName(String name) async {
     if (currentUser == null || name.trim().isEmpty) return;
     currentUser = currentUser!.copyWith(name: name.trim());
+    notifyListeners();
     if (cloud.enabled) {
-      await cloud.saveUser(currentUser!);
+      unawaited(cloud.saveUser(currentUser!));
     } else {
       final users = _users;
       users[currentUser!.id] = currentUser!.toMap();
-      await db.write(_usersKey, users);
+      unawaited(db.write(_usersKey, users));
     }
     if (couple != null && couple!.memberIds.contains(currentUser!.id)) {
       final names = {
@@ -629,15 +705,15 @@ class AppController extends ChangeNotifier {
         currentUser!.id: currentUser!.name,
       };
       couple = couple!.copyWith(memberNames: names);
+      notifyListeners();
       if (cloud.enabled) {
-        await cloud.saveCouple(couple!);
+        unawaited(cloud.saveCouple(couple!));
       } else {
         final couples = _couples;
         couples[couple!.id] = couple!.toMap();
-        await db.write(_couplesKey, couples);
+        unawaited(db.write(_couplesKey, couples));
       }
     }
-    notifyListeners();
   }
 
   @override
@@ -653,17 +729,42 @@ class AppController extends ChangeNotifier {
   }
 
   String _friendlyError(Object error) {
-    final message = error.toString();
-    if (message.contains('email-already-in-use'))
+    // Exceptions raised inside our own `join_couple` Postgres function are
+    // already written as user-facing copy — surface them verbatim instead
+    // of genericizing them away.
+    final raw = error.toString();
+    for (final known in const [
+      'No couple was found with that code.',
+      'That couple already has two members.',
+    ]) {
+      if (raw.contains(known)) return known;
+    }
+
+    final message = raw.toLowerCase();
+    if (message.contains('already registered') ||
+        message.contains('already exists') ||
+        message.contains('user_already_exists')) {
       return 'That email is already registered.';
-    if (message.contains('invalid-credential') ||
-        message.contains('wrong-password') ||
-        message.contains('user-not-found'))
+    }
+    if (message.contains('invalid login credentials') ||
+        message.contains('invalid_credentials') ||
+        message.contains('invalid email or password')) {
       return 'The email or password is incorrect.';
-    if (message.contains('weak-password'))
+    }
+    if (message.contains('weak-password') ||
+        message.contains('weak_password') ||
+        message.contains('should be at least')) {
       return 'Use a stronger password with at least 6 characters.';
-    if (message.contains('network-request-failed'))
+    }
+    if (message.contains('rate limit') ||
+        message.contains('too many requests')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    if (message.contains('socketexception') ||
+        message.contains('network') ||
+        message.contains('failed host lookup')) {
       return 'Network connection failed. Please try again.';
+    }
     return 'Something went wrong. Please check your details and try again.';
   }
 }

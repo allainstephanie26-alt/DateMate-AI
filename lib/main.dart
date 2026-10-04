@@ -9,7 +9,7 @@ import 'screens/home_dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/local_database.dart';
-import 'services/recommendation_service.dart';
+import 'services/place_catalog_service.dart';
 import 'state/app_controller.dart';
 import 'theme.dart';
 
@@ -24,11 +24,13 @@ Future<void> main() async {
   final cloudSync = CloudSyncService();
   await cloudSync.init();
 
-  // Initialize recommendation service.
-  final recommendations = RecommendationService();
+  // The place catalog is fully on-device: a small verified seed list plus
+  // an unlimited, deterministic local generator. No place-search API key
+  // is required, and nothing here waits on a network call.
+  final catalog = PlaceCatalogService();
 
   // Create the main application controller.
-  final controller = AppController(localDatabase, recommendations, cloudSync);
+  final controller = AppController(localDatabase, catalog, cloudSync);
 
   // Load saved application data.
   await controller.load();
@@ -98,19 +100,29 @@ class _RootShellState extends State<RootShell> {
       );
     }
 
-    // Main five-screen navigation.
+    // Main five-screen navigation, with a quick cross-fade so switching
+    // tabs feels like a native app instead of an instant hard cut.
+    Widget child;
     switch (_tabIndex) {
       case 1:
-        return AiRecommendationScreen(
+        child = AiRecommendationScreen(
+          key: const ValueKey('recommend'),
           controller: controller,
           onNavTap: _goToTab,
         );
+        break;
 
       case 2:
-        return BucketListScreen(controller: controller, onNavTap: _goToTab);
+        child = BucketListScreen(
+          key: const ValueKey('bucket'),
+          controller: controller,
+          onNavTap: _goToTab,
+        );
+        break;
 
       case 3:
-        return CouplePreferencesScreen(
+        child = CouplePreferencesScreen(
+          key: const ValueKey('preferences'),
           controller: controller,
           onNavTap: _goToTab,
           onSaved: () {
@@ -119,9 +131,11 @@ class _RootShellState extends State<RootShell> {
             });
           },
         );
+        break;
 
       default:
-        return HomeDashboardScreen(
+        child = HomeDashboardScreen(
+          key: const ValueKey('home'),
           controller: controller,
           onNavTap: _goToTab,
           onGetFreshIdea: () {
@@ -135,5 +149,14 @@ class _RootShellState extends State<RootShell> {
           },
         );
     }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (widget, animation) =>
+          FadeTransition(opacity: animation, child: widget),
+      child: child,
+    );
   }
 }
