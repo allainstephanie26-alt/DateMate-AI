@@ -35,8 +35,6 @@ void main() {
           seen.add(r.id);
         }
       }
-      // 12 pages * up to 16 results is a couple hundred distinct ideas from
-      // a single city + food combination, with more always available.
       expect(seen.length, greaterThan(100));
     });
 
@@ -49,7 +47,7 @@ void main() {
           activities: {'Museum'},
           budget: budget,
         ),
-        page: 1, // page 1+ is guaranteed to be generated, not the seed list
+        page: 1,
         size: 10,
       );
       expect(results, isNotEmpty);

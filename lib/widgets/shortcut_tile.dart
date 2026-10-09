@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// A compact home-screen shortcut (e.g. "Find a date", "Pick for us"). The
-/// icon chip uses the brand gradient — a small, deliberate highlight on an
-/// otherwise quiet card.
 class ShortcutTile extends StatelessWidget {
   final IconData icon;
   final String title;

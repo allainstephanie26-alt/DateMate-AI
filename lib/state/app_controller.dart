@@ -21,18 +21,10 @@ class AppController extends ChangeNotifier {
   String mood = 'Chill';
   List<DateSuggestion> currentSuggestions = [];
 
-  /// Ids shown in [currentSuggestions] or offered as chat alternates, kept
-  /// so "pick another" never repeats the same place twice in a row.
   Set<String> recentlyShownIds = {};
 
   bool ready = false;
   bool busy = false;
-
-  /// True only while a background write to Supabase is in flight. Nothing
-  /// in the UI blocks on this — it is shown as a small, dismissible sync
-  /// indicator, not a full-screen spinner, because the local state (and the
-  /// generated suggestions) are already correct and on screen by the time
-  /// this flips true.
   bool syncing = false;
   bool generating = false;
   String? errorMessage;
@@ -113,9 +105,6 @@ class AppController extends ChangeNotifier {
         }
         currentUser = profile;
         if (profile.coupleId == null) {
-          // First confirmed login: the couple couldn't be created at
-          // sign-up time (no session existed yet), so it's created now,
-          // with a real authenticated session in place for the writes.
           await createCouple();
         } else {
           await _loadCouple();
@@ -171,12 +160,6 @@ class AppController extends ChangeNotifier {
 
     try {
       if (cloud.enabled) {
-        // Supabase sends its own confirmation email as part of signUp, and
-        // a database trigger creates the `profiles` row (using the name
-        // passed here as signup metadata) the instant the auth user is
-        // created — there is no authenticated session yet to write with
-        // directly, since the account is not confirmed. The couple itself
-        // is created lazily on first confirmed login, below in `login()`.
         await cloud.signUp(normalized, password, name: cleanName);
         await cloud.signOut();
         await db.delete(_sessionKey);
@@ -301,11 +284,6 @@ class AppController extends ChangeNotifier {
     final normalized = code.trim().toUpperCase();
     try {
       if (cloud.enabled) {
-        // The `join_couple` Postgres function does the lookup, the
-        // two-member check, and the membership update as one atomic,
-        // elevated-privilege call — a plain client-side update here would
-        // be correctly rejected by RLS, since the joining user isn't a
-        // member of the target couple yet.
         final joined = await cloud.joinCoupleByCode(normalized);
         currentUser = currentUser!.copyWith(coupleId: joined.id);
         await _loadCouple();
@@ -448,13 +426,6 @@ class AppController extends ChangeNotifier {
 
   // ---------------------------------------------------------------------
   // Preferences + suggestions
-  //
-  // Saving is optimistic: the couple object, the suggestion list, and the
-  // UI all update in the same synchronous tick (generation reads the local
-  // catalog only — no network). The write to Hive is awaited because it is
-  // effectively instant; the write to Supabase, when cloud sync is on,
-  // happens in the background behind the `syncing` flag so the couple never
-  // has to watch a spinner just to save what food they like.
   // ---------------------------------------------------------------------
 
   Future<void> savePreferences({
@@ -500,8 +471,6 @@ class AppController extends ChangeNotifier {
     mood: moodOverride ?? mood,
   );
 
-  /// One page of the scrollable "browse places" catalog. Effectively
-  /// unlimited: call again with an incrementing [page] as the user scrolls.
   List<DateSuggestion> browsePlaces({
     required int page,
     int size = PlaceCatalogService.pageSize,
@@ -540,8 +509,6 @@ class AppController extends ChangeNotifier {
     };
   }
 
-  /// Rotates in a fresh batch, excluding whatever was already shown this
-  /// session so "Fresh idea" never repeats the same pick twice in a row.
   Future<void> refreshSuggestions() async {
     generating = true;
     notifyListeners();
@@ -729,9 +696,6 @@ class AppController extends ChangeNotifier {
   }
 
   String _friendlyError(Object error) {
-    // Exceptions raised inside our own `join_couple` Postgres function are
-    // already written as user-facing copy — surface them verbatim instead
-    // of genericizing them away.
     final raw = error.toString();
     for (final known in const [
       'No couple was found with that code.',

@@ -33,9 +33,6 @@ class PlaceBrowseSectionState extends State<PlaceBrowseSection> {
     loadMore();
   }
 
-  /// Fetches and appends the next page. Safe to call repeatedly (from a
-  /// scroll listener as well as the button) — a request already in flight
-  /// is ignored.
   void loadMore() {
     if (_loading) return;
     setState(() => _loading = true);

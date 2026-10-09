@@ -40,16 +40,6 @@ class CatalogQuery {
   );
 }
 
-/// Generates and ranks date-place suggestions entirely on-device.
-///
-/// There is no network call anywhere in this class. That is what makes
-/// suggestion generation and preference saving fast: the previous version of
-/// the app awaited an OpenStreetMap geocoder + Overpass query on the
-/// critical path of "Save preferences" and "Generate ideas", which is what
-/// made both feel slow and occasionally show nothing. This version answers
-/// from an in-memory, deterministically-generated catalog, so results are
-/// instant and can be paged forever for a "scroll for more places" browsing
-/// experience without ever integrating a paid places API.
 class PlaceCatalogService {
   PlaceCatalogService();
 
@@ -64,11 +54,6 @@ class PlaceCatalogService {
   // Public API
   // ---------------------------------------------------------------------
 
-  /// Returns one page (default 16) of ranked suggestions for [query]. Page
-  /// 0 leads with any matching verified seed places; every page after that,
-  /// and the remainder of page 0, is generated on the fly. Call again with
-  /// `page + 1` to load more — there is no upper bound, which is how the
-  /// "browse many places" scroll works without an API.
   List<DateSuggestion> page(
     CatalogQuery query, {
     required int page,
@@ -109,8 +94,6 @@ class PlaceCatalogService {
     return _rank(places, query).map((p) => _toSuggestion(p, query)).toList();
   }
 
-  /// A short, high-confidence list (used by the home dashboard's "Tonight's
-  /// idea" and mood tiles) — just the first page, trimmed.
   List<DateSuggestion> quickPicks(CatalogQuery query, {int count = 8}) {
     return page(query, page: 0, size: count);
   }
@@ -172,8 +155,7 @@ class PlaceCatalogService {
         }
       }
     }
-    // An unrecognized location still deserves results: fall back to the
-    // full city list rather than returning nothing.
+
     return matched.isEmpty ? CatalogData.cityNames : matched.toList();
   }
 
@@ -420,11 +402,6 @@ class PlaceCatalogService {
       category: place.categories.isNotEmpty ? place.categories.first : 'Date',
       matchTag: place.verified ? 'Verified place' : 'DateMate idea',
       location: place.locationLabel,
-      // Verified seed places carry a real local asset path (see
-      // assets/places/); generated "DateMate idea" places have none by
-      // definition, so this stays empty and PlaceImage shows the
-      // illustrated hero instead. Never a network URL — see PlaceImage's
-      // doc comment for why.
       imageUrl: place.imageAsset,
       placeId: place.id,
       country: place.country,

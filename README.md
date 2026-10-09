@@ -63,41 +63,53 @@ DateMate AI provides a simple way for couples to plan and keep track of date act
 - Provides a mobile-style interface that can be accessed through the web using Device Preview.
 
 ## Built with
-
+ 
 | Technology | Purpose |
 | --- | --- |
 | Framework | Flutter |
 | Programming Language | Dart |
 | State Management | `ChangeNotifier` and `setState` |
 | Local Storage | Hive |
-| Cloud Database | Firebase Cloud Firestore |
-| Authentication | Firebase Authentication |
+| Cloud Database | Supabase (PostgreSQL + Row Level Security + Realtime) |
+| Authentication | Supabase Auth (email + password, email confirmation) |
 | Device Preview | `device_preview` |
-| Other Packages | `firebase_core`, `firebase_auth`, `cloud_firestore`, `hive_flutter`, `crypto`, `cupertino_icons` |
-
+| Other Packages | `supabase_flutter`, `hive_flutter`, `crypto`, `cupertino_icons` |
+ 
 ## Running it yourself
-
+ 
 ```bash
 flutter pub get
 cp .env.example .env      # only if your app needs keys, see below
 flutter run -d web-server --web-port 8080
 ```
-
+ 
 Then open http://localhost:8080. Requires Flutter (run `flutter --version` and
 put yours here).
-
+ 
 ### Environment variables
-
-This project does not use a `.env` file. Firebase is used for authentication
-and cloud synchronization through the application's Firebase configuration.
-Firebase configuration values are generated and managed through the FlutterFire
-configuration for the project.
-
+ 
+Supabase powers authentication and cloud sync. The project URL and publishable
+key have working defaults in `lib/services/cloud_sync_service.dart`, so a plain
+`flutter run` works. To point the app at another Supabase project, override
+them with `--dart-define` (or repository secrets for the deploy workflow).
 | Variable | What it is | Where to get one |
 | --- | --- | --- |
-| `FIREBASE_API_KEY` | Identifies the Firebase project used by the application | Firebase Console → Project settings → Apps |
-| `FIREBASE_PROJECT_ID` | Identifies the Firebase project connected to DateMate AI | Firebase Console → Project settings |
-| `FIREBASE_APP_ID` | Identifies the registered Firebase application | Firebase Console → Project settings → Apps |
+| `https://mmsvqcmqmfjfndchivpa.supabase.co` | Your Supabase project URL | Supabase Dashboard → Project Settings → API |
+| `sb_publishable_2lzJ9PeGlnC5ryj3GR-SWAQ_glWyz5Qy` | Public client key (safe to ship; RLS protects the data) | Supabase Dashboard → Project Settings → API Keys |
+| `https://allainstephanie26-alt.github.io/DateMate-AI/` (optional) | Where confirmation / reset emails return to | Your deployed URL; also add it to Authentication → URL Configuration |
+ 
+Never put the `service_role` / secret key or a Gemini key in the app.
+ 
+### Setting up the Supabase backend
+ 
+1. Run `supabase/migrations/0001_init.sql` in the Supabase SQL editor.
+2. Run the checks in `supabase/verify_setup.sql` (all tables, the
+   `on_auth_user_created` trigger, and the policies must exist).
+3. Authentication → Providers → Email: enabled.
+4. Authentication → URL Configuration: set the Site URL and add your Redirect
+   URLs (the GitHub Pages URL and `http://localhost:8080/**`).
+5. Optional AI chat: `supabase secrets set GEMINI_API_KEY=...` then
+   `supabase functions deploy datemate-chat`.
 
 ## Privacy and secrets
 

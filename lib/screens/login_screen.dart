@@ -67,7 +67,6 @@ class _LoginScreenState extends State<LoginScreen> {
     widget.onLoggedIn?.call();
   }
 
-  // FIXED: Matches AppController.resetPassword(String email)
   Future<void> _forgotPassword() async {
     final emailController = TextEditingController(text: email.text.trim());
 

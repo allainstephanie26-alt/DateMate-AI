@@ -6,17 +6,6 @@ import '../data/catalog_data.dart';
 import '../theme.dart';
 import 'stock_photo.dart';
 
-/// A place photo.
-///
-/// Three cases, in priority order:
-///  1. [assetPath] is set → the curated/verified place's own bundled photo
-///     (`assets/places/<id>.jpg`). This mapping is untouched.
-///  2. [aiIdea] is true (a generated "DateMate idea" with no bundled photo)
-///     → a real, free stock photograph chosen by category via [StockPhoto]
-///     (restaurant → food, café → coffee, outdoor → nature, cinema →
-///     entertainment, …). Never an icon, pin, gradient or colored box.
-///  3. Anything else (e.g. a manually typed bucket-list item) → the original
-///     illustrated hero, exactly as before.
 class PlaceImage extends StatelessWidget {
   const PlaceImage({
     super.key,
@@ -99,8 +88,6 @@ class PlaceImage extends StatelessWidget {
   }
 }
 
-/// The original designed fallback hero (kept for non-AI items such as
-/// manually added bucket-list entries).
 class _IllustratedHero extends StatelessWidget {
   const _IllustratedHero({
     required this.icon,

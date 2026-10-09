@@ -65,8 +65,6 @@ class BucketListTile extends StatelessWidget {
                       category: item.category,
                       seedKey: item.id,
                       assetPath: item.imageUrl,
-                      // Saved DateMate ideas carry no bundled photo; manual
-                      // entries ("Added manually") keep the original look.
                       aiIdea:
                           item.imageUrl.isEmpty &&
                           item.subtitle != 'Added manually',

@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// The app's primary call-to-action: the full coral → magenta → violet
-/// gradient with a soft colored glow underneath, reserved for the one
-/// action per screen that matters most (save, generate, sign in) so it
-/// keeps reading as a highlight rather than becoming the default button.
 class PrimaryGradientButton extends StatefulWidget {
   const PrimaryGradientButton({
     super.key,

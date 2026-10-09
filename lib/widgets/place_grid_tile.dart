@@ -4,9 +4,6 @@ import '../models/app_models.dart';
 import '../theme.dart';
 import 'place_image.dart';
 
-/// A compact card for the unlimited, scrollable place catalog. Every tile is
-/// fully tappable (opens details) and carries its own quick-save button, so
-/// the couple never has to open a place just to bucket-list it.
 class PlaceGridTile extends StatefulWidget {
   const PlaceGridTile({
     super.key,

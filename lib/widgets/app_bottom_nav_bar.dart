@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// A floating, frosted dark-glass nav bar. The active tab is a glowing
-/// gradient pill so it's the one place on screen that always orients you.
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({
     super.key,

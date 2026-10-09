@@ -119,8 +119,6 @@ class _DateMateChatSheetState extends State<DateMateChatSheet> {
         seed: DateTime.now().microsecondsSinceEpoch,
       );
 
-      // A short, deliberate pause so the reply doesn't feel like it teleported
-      // in — the lookup itself is already instant (no network call).
       await Future<void>.delayed(const Duration(milliseconds: 260));
       if (!mounted) return;
 
@@ -494,9 +492,6 @@ class _DateMateChatSheetState extends State<DateMateChatSheet> {
   );
 }
 
-/// One chat message: sender label, avatar and a bubble. AI and user
-/// messages differ in side, avatar, fill and corner "tail" so who said what
-/// is clear at a glance.
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.line,
@@ -812,9 +807,6 @@ class _SelectedPlaceCard extends StatelessWidget {
   }
 }
 
-/// DateMate's assistant avatar, drawn locally (no network image needed):
-/// a coral → magenta → violet gradient ring around a deep-plum disc holding
-/// a gradient heart with a sparkle, plus an optional "online" dot.
 class _DateMateAvatar extends StatelessWidget {
   const _DateMateAvatar({this.size = 42, this.showOnline = false});
   final double size;
@@ -906,7 +898,6 @@ class _DateMateAvatar extends StatelessWidget {
   }
 }
 
-/// The signed-in user's chat avatar: their initial on a soft violet disc.
 class _UserAvatar extends StatelessWidget {
   const _UserAvatar({required this.initial, this.size = 32});
   final String initial;

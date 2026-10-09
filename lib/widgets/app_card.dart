@@ -27,8 +27,6 @@ class AppCard extends StatelessWidget {
       );
     }
 
-    // Layered dark card: plum gradient fill, a faint light edge and a soft
-    // magenta under-glow so cards float above the page backdrop.
     return Container(
       margin: margin,
       padding: padding,

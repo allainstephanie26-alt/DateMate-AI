@@ -48,9 +48,6 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
     if (mounted) setState(() {});
   }
 
-  /// A key that changes whenever the search criteria change, so the browse
-  /// grid below restarts from page 0 with fresh results instead of mixing
-  /// pages generated for a previous mood or filter set.
   String get _browseToken {
     final couple = widget.controller.couple;
     return [
@@ -62,10 +59,6 @@ class _AiRecommendationScreenState extends State<AiRecommendationScreen> {
     ].join('|');
   }
 
-  /// Fires when the outer page scrolls near the bottom, so the "unlimited
-  /// places" grid keeps growing as the couple scrolls instead of stopping
-  /// at one page — the "Load more" button underneath does the same thing
-  /// for a tap-only alternative.
   bool _onScrollNotification(ScrollNotification n) {
     if (n.metrics.pixels > n.metrics.maxScrollExtent - 500) {
       _browseSectionKey.currentState?.loadMore();

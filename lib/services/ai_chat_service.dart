@@ -376,8 +376,6 @@ class AiChatService {
         suggestions: alternates,
       );
     } catch (_) {
-      // Network hiccup, function not deployed, Gemini quota, malformed
-      // JSON — any of these fall through to the local engine below.
       return null;
     }
   }

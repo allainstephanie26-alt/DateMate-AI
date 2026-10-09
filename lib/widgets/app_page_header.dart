@@ -62,10 +62,6 @@ class AppPageHeader extends StatelessWidget {
   }
 }
 
-/// The app's round "glass" icon button — used for back, close, next,
-/// continue and other single-icon controls so they all share one look:
-/// dark translucent fill, hairline light border and a soft pink glow ring
-/// while pressed.
 class AppIconButton extends StatefulWidget {
   const AppIconButton({
     super.key,

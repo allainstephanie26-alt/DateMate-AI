@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// A preference/filter chip. Selected state uses the brand gradient with a
-/// soft glow; unselected is a dark glass pill with a hairline border so the
-/// gradient only shows up where it means something.
 class SelectableChip extends StatelessWidget {
   const SelectableChip({
     super.key,

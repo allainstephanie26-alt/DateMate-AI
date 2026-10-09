@@ -3,17 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// DateMate AI design tokens — v5 "dark romantic" theme.
-///
-/// Token NAMES are unchanged from v4 so every screen keeps compiling; only
-/// their values moved to a deep plum / dark violet / near-black palette with
-/// pink, coral, magenta, lavender and purple accents.
-///
-/// Reading guide:
-///  * [primary] is the main TEXT/title colour (a soft near-white blush) —
-///    it is no longer a fill colour. Fills use [magentaDeep] / gradients.
-///  * [blush] / [blushDeep] / [lavenderSoft] are now dark tinted tiles used
-///    behind small icons and chips.
 class AppColors {
   // ── Accent family (unchanged hues, tuned to sit on dark surfaces) ──────
   static const coral = Color(0xFFFF7A8A);
@@ -77,7 +66,6 @@ class AppColors {
     colors: [Color(0xFFD9476F), Color(0xFF8E1F63), Color(0xFF2A1048)],
   );
 
-  /// Layered card fill: a barely-lit violet top edge fading into plum.
   static const softGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -157,8 +145,6 @@ class AppShadows {
   ];
 }
 
-/// Frosted dark glass: a translucent plum tint over a blurred backdrop with
-/// a hairline light border.
 class GlassLayer extends StatelessWidget {
   const GlassLayer({
     super.key,
@@ -198,8 +184,6 @@ class GlassLayer extends StatelessWidget {
   }
 }
 
-/// App-wide page background: near-black plum with soft magenta / violet
-/// light pools. Screens use transparent Scaffolds so this shows through.
 class AppBackdrop extends StatelessWidget {
   const AppBackdrop({super.key, required this.child});
   final Widget child;
@@ -249,7 +233,10 @@ class AppBackdrop extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
+          colors: [
+            color.withValues(alpha: alpha),
+            color.withValues(alpha: 0),
+          ],
         ),
       ),
     ),

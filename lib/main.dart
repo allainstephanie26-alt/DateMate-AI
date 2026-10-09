@@ -36,9 +36,6 @@ Future<void> main() async {
   final cloudSync = CloudSyncService();
   await cloudSync.init();
 
-  // The place catalog is fully on-device: a small verified seed list plus
-  // an unlimited, deterministic local generator. No place-search API key
-  // is required, and nothing here waits on a network call.
   final catalog = PlaceCatalogService();
 
   // Create the main application controller.
@@ -71,7 +68,6 @@ class DateMateApp extends StatelessWidget {
       // Device Preview support.
       locale: DevicePreview.locale(context),
 
-      // The shared dark plum backdrop sits behind every (transparent) screen.
       builder: (context, child) => DevicePreview.appBuilder(
         context,
         AppBackdrop(child: child ?? const SizedBox.shrink()),
@@ -116,8 +112,6 @@ class _RootShellState extends State<RootShell> {
       );
     }
 
-    // Main five-screen navigation, with a quick cross-fade so switching
-    // tabs feels like a native app instead of an instant hard cut.
     Widget child;
     switch (_tabIndex) {
       case 1:

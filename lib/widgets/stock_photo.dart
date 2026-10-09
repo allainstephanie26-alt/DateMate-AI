@@ -12,21 +12,6 @@ enum StockGroup {
 }
 
 /// Free-to-use, photo-style imagery for DateMate Idea / AI recommendations.
-///
-/// Rules this file follows:
-///  * Real photographs only — never an icon, emoji, pin, gradient or colored
-///    box as the main image.
-///  * Free to use with no payment, premium tier, API key or paid API:
-///    Unsplash photos are served from their public CDN under the Unsplash
-///    License, and loremflickr.com is a key-less keyword endpoint backed by
-///    Creative-Commons Flickr photos.
-///  * Used ONLY for generated "DateMate idea" places. Verified/curated places
-///    keep their own bundled `assets/places/<id>.jpg` mapping untouched
-///    (see PlaceImage).
-///
-/// Every group has several photos plus a keyword fallback, and the widget
-/// walks that list on any load error, so one dead URL never leaves a card
-/// without a photo.
 class StockPhotoCatalog {
   StockPhotoCatalog._();
 
@@ -85,9 +70,6 @@ class StockPhotoCatalog {
     StockGroup.entertainment: 'concert,nightlife',
   };
 
-  /// Bundled, already-shipped real photos that are an honest last resort when
-  /// the device is offline. Only groups with a genuinely matching asset are
-  /// listed; they are referenced, never remapped or modified.
   static const Map<StockGroup, String> _offlineAsset = {
     StockGroup.restaurant: 'assets/places/makimura-ramen-angeles.jpg',
     StockGroup.cafe: 'assets/places/makimura-ramen-angeles.jpg',
@@ -176,12 +158,6 @@ class StockPhotoCatalog {
   static String? offlineAssetFor(StockGroup group) => _offlineAsset[group];
 }
 
-/// A real stock photograph for a DateMate idea.
-///
-/// While loading it shows a quiet dark shimmer (a loading state, not the
-/// image). On a load error it advances to the next free photo; if every
-/// network source fails it falls back to a bundled real photo of a matching
-/// category when one exists.
 class StockPhoto extends StatefulWidget {
   const StockPhoto({
     super.key,
@@ -226,8 +202,6 @@ class _StockPhotoState extends State<StockPhoto> {
     _index = 0;
   }
 
-  /// Advance to the next source — guarded so a repeated error callback for
-  /// the same failed URL can never skip a candidate.
   void _next(int failedIndex) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _index == failedIndex) setState(() => _index++);

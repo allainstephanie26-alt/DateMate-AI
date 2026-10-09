@@ -1,38 +1,37 @@
-# Demo video
+# Demo Video
 
-**File:** `demo.mp4` in this folder, or the hosted link (see below)
-**Length:** aim for 3 to 5 minutes
-**Recorded on:** the device you used
+**Project:** DateMate-AI
+
+**Length:** 8 minutes and 37 seconds
+
+**Recorded on:** Mobile phone using screen recording
+
+**Demo video:** [Watch the DateMate-AI Demo](https://drive.google.com/file/d/1F0AOerwApI-A3Kt_fmHVDIr9IDVQScZX/view)
 
 ## What it shows
 
-A short list, in order, so a viewer can skip to what they need:
+- **0:00 – Introduction:** Introduces DateMate-AI and explains its purpose in helping couples discover and save date ideas based on their preferences.
 
-- 0:00 what the app is and who it is for
-- 0:20 ...
-- 1:10 ...
+- **0:30 – Login Screen:** Demonstrates the login screen and explains how users access the application. The related Flutter and Dart code is then shown to explain how the screen is implemented.
 
-Cover, in this order: the main user journey end to end, anything that only works
-on a real device (camera, GPS, sensors), and the thing you are proudest of.
+- **1:30 – Home Dashboard:** Presents the dashboard and explains the information and features available to users. The corresponding code is shown to demonstrate how the dashboard interface is built.
+
+- **2:30 – Couple Preferences:** Shows how users select their preferred food, activities, location, and budget. The related code is presented to explain how the preference options and selections are handled.
+
+- **3:40 – AI Recommendations:** Demonstrates how users view date suggestions based on their selected preferences. The corresponding code is shown to explain how the recommendation screen and suggestion features are implemented.
+
+- **5:00 – Bucket List:** Shows how users save date ideas and view their saved places. The related code is presented to explain how saved dates are displayed and managed.
+
+- **6:10 – Supabase Integration:** Presents the relevant code and configuration used to connect the application to Supabase, where applicable.
+
+- **7:20 – Application Code Overview:** Reviews the important Flutter and Dart files and explains how the screens, widgets, and services work together.
+
+- **8:00 – Conclusion:** Summarizes the purpose of DateMate-AI, its main features, and the work completed during development.
 
 ## Getting it into the repo
 
-GitHub **blocks any file over 100 MB** and warns over 50 MB, so compress before
-you commit:
+The demonstration video is hosted on Google Drive instead of being committed directly to the repository. This helps keep the repository size manageable while allowing viewers to access the recording through the provided link.
 
-```bash
-ffmpeg -i raw.mp4 -vcodec libx264 -crf 28 -preset slow \
-       -vf scale=-2:720 -acodec aac -b:a 96k demo.mp4
-```
+## Recording Notes
 
-Raise `-crf` (28 to 32) or drop to `-2:480` if it is still too large. If it still
-does not fit, attach it to a **GitHub Release** or upload it unlisted and link it
-here. Never commit the raw capture: git keeps it forever even after you delete
-it.
-
-## Before you record
-
-- Real data off the screen: no classmates' names, numbers, faces or messages.
-- Notifications off.
-- Sensible sample data, not "asdf".
-- One unbroken take per feature. Say what you are doing while you do it.
+The video was recorded using a mobile phone's screen recording feature. Each main screen is demonstrated first, followed by the corresponding source code to show how the interface and its features are implemented.
