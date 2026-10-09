@@ -29,25 +29,25 @@ this paragraph with them:
 
 ### Login / Sign Up
 
-![Login / Sign Up](docs/assets/login(1).png)
+<img width="356" height="621" alt="image" src="https://github.com/user-attachments/assets/5d679aa5-0fb3-4d6c-9809-840d2c67574b" />
 
 ### Couple Preferences
 
-![Couple Preferences](docs/assets/preferences(1).png)
+<img width="386" height="618" alt="image" src="https://github.com/user-attachments/assets/45a89c51-f597-4380-937e-3e1f79f62cf7" />
 
 ### Home Dashboard
 
-![Home Dashboard](docs/assets/home(1).png)
+<img width="389" height="619" alt="image" src="https://github.com/user-attachments/assets/d46bfceb-7edd-412e-b6b6-2d3d09a6db5a" />
 
 ### AI Date Recommendation
 
-![AI Date Recommendation](docs/assets/ai_recommendation(1).png)
+<img width="355" height="621" alt="image" src="https://github.com/user-attachments/assets/2362bb63-4a53-4e7d-b18b-245036d6eb41" />
 
-![AI Date Recommendation](docs/assets/ai_chat.png)
+<img width="341" height="617" alt="image" src="https://github.com/user-attachments/assets/4e0ce666-85d6-495a-91d3-9e3bf4388d89" />
 
 ### Date Bucket List
 
-![Date Bucket List](docs/assets/bucket_list(1).png)
+<img width="391" height="620" alt="image" src="https://github.com/user-attachments/assets/89c51d2b-e9f1-4211-8865-080addb414ad" />
 
 A repo without screenshots reads as abandoned, whatever the code says.
 
